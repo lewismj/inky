@@ -5,9 +5,9 @@
 
 namespace inky::unicode
 {
-    size_t is_category(std::string_view str, const std::initializer_list<int>& categories) {
+    size_t is_category(std::string_view input, const std::initializer_list<int>& categories) {
         utf8proc_int32_t cp = { };
-        auto sz = utf8proc_iterate((const uint8_t*) str.data(), str.size(), &cp);
+        auto sz = utf8proc_iterate((const uint8_t*) input.data(), input.size(), &cp);
         if(cp == -1) return 0;
 
         auto cat = utf8proc_category(cp);
@@ -16,16 +16,16 @@ namespace inky::unicode
         return 0;
     }
 
-    size_t get_codepoint_length(std::string_view str) {
+    size_t get_codepoint_length(std::string_view input) {
         utf8proc_int32_t cp = { };
-        auto sz = utf8proc_iterate((const uint8_t*) str.data(), str.size(), &cp);
+        auto sz = utf8proc_iterate((const uint8_t*) input.data(), input.size(), &cp);
         if(cp == -1) return 1;
 
         return sz;
     }
 
-    size_t is_letter(std::string_view str) {
-        return is_category(str, {
+    size_t is_letter(std::string_view input) {
+        return is_category(input, {
                 UTF8PROC_CATEGORY_LU, UTF8PROC_CATEGORY_LL, UTF8PROC_CATEGORY_LT,
                 UTF8PROC_CATEGORY_LM, UTF8PROC_CATEGORY_LO
         });

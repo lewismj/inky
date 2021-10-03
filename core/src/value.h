@@ -4,7 +4,6 @@
 #include <variant>
 #include <vector>
 
-
 namespace inky {
 
     /* Forward declarations. */

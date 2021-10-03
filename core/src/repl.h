@@ -1,12 +1,12 @@
 #pragma once
 
 namespace inky::repl {
+
     /**
      * Defines types & functions for the REPL.
      *  repl_context ; flags that can alter the behaviour of the repl output.
      *  run ; run the repl loop.
      */
-
 
     constexpr int FLAG_TRACE = 0x1; /* Set debug flag on, when using the run. */
 
