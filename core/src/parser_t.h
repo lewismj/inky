@@ -7,7 +7,7 @@ namespace inky::parser {
 
     /*
      * Types used by the parser:
-     *  1. Haskell data.Either replacement??
+     *  1. Haskell data.Either replacement; TODO - implement right/left map
      *  2. location - a position (start position and length) in input string.
      *  3. error - a concrete error type for parser.
      *  4. token_type - different types of allowable tokens.
@@ -78,7 +78,7 @@ namespace inky::parser {
         size_t length;
     };
 
-
+    /* parser error message; can replace the placeholder 'error' used by value? */
     struct error {
         std::string message;
         location loc;
@@ -88,7 +88,6 @@ namespace inky::parser {
         Invalid,
         EndOfInput
     };
-
 
     struct token {
         token() = default;

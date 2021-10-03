@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.19)
 
-include(FetchContent)
+# Dependencies
 
-# Download 3rd party dependencies.
+include(FetchContent)
 
 # Format {fmt} library, type-safe printf.
 FetchContent_Declare(
-        fmt
-        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG 8.0.1
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG 8.0.1
 )
 
 FetchContent_GetProperties(fmt)
@@ -18,11 +18,12 @@ if(NOT fmt_POPULATED)
 endif()
 
 FetchContent_Declare(
-        utf8proc
-        GIT_REPOSITORY https://github.com/JuliaStrings/utf8proc
-        GIT_TAG v2.6.1
+    utf8proc
+    GIT_REPOSITORY https://github.com/JuliaStrings/utf8proc
+    GIT_TAG v2.6.1
 )
 
+# Utf library from Julia project.
 FetchContent_GetProperties(utf8proc)
 if(NOT utf8proc_POPULATED)
     FetchContent_Populate(utf8proc)

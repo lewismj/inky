@@ -6,9 +6,14 @@
 #include <variant>
 #include <vector>
 #include "parser_t.h"
-#include "value.h"
 
 
 namespace inky::parser {
+
+    class value; /* forward declaration of value. */
+
+    /* The lexer, take the input string and create a vector of token. */
+    either<error,std::vector<value*>> parse(std::string_view input);
+
 
 }

@@ -1,13 +1,17 @@
 project(inky-core)
 
 # add external include paths:
-include_directories(${CMAKE_BINARY_DIR}/_deps/fmt-src/include)
+include_directories(${CMAKE_BINARY_DIR}/_deps/fmt-src/include) # fmt library
+include_directories(${CMAKE_BINARY_DIR}/_deps/utf8proc-src)    # utf8 library.
 
+# define sources/headers:
 set (SOURCES src/repl.cpp src/environment.cpp src/parser.cpp src/value.cpp)
-set (HEADERS src/repl.h src/environment.h src/parser.h src/value.h src/parser_t.h)
+set (HEADERS src/repl.h src/environment.h src/parser.h src/value.h src/parser_t.h src/unicode.h)
 
+# library definition:
 add_library(${PROJECT_NAME} ${SOURCES})
 
+# only need to make repl.h available in the headers folder in distribution.
 set_target_properties(inky-core PROPERTIES PUBLIC_HEADER "src/repl.h")
 
 install (   TARGETS ${PROJECT_NAME}
