@@ -1,0 +1,8 @@
+## Inky 
+
+
+
+###Dependencies
+
+- {fmt} library.
+
