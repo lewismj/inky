@@ -2,7 +2,7 @@
 
 
 
-##Dependencies
+## Dependencies
 
 - {fmt}
 - utf8proc
