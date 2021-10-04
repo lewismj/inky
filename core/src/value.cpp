@@ -1,11 +1,14 @@
+#include <algorithm>
 #include <iterator>
-#include <vector>
 #include "value.h"
+
 
 namespace inky {
 
     value::~value() {
-        // clean up cells.
+        std::for_each(cells.begin(),cells.end(),[](const auto* v) {
+            delete v;
+        });
     }
 
     void value::set_kind(value::type t) {
@@ -32,6 +35,8 @@ namespace inky {
         std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
         delete v;
     }
+
+
 
 
 };

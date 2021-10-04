@@ -18,11 +18,12 @@ namespace inky {
     class value {
     public:
 
-        enum class type { /* WIP */
+        enum class type {
             NulOp,
             Integer,
             Double,
-            Symbol, /* need to differentiate between symbol and string literal. */
+            String,
+            Symbol,
             Function,
             SExpression,
             QExpression /* placeholder for quoted s-expression. */
@@ -33,14 +34,18 @@ namespace inky {
         explicit value(const long l)   : kind(type::Integer) { var = l; }
         explicit value(const double d) : kind(type::Double) { var = d; }
         explicit value(const std::string& s) : kind(type::Symbol) { var = s; }
+        explicit value(const std::string& s, bool literal) {
+            kind = literal ? type::String : type::Symbol;
+            var = s;
+        }
         explicit value(const function& f): kind(type::Function) { var = f;}
 
         /* destructor. */
         ~value();
 
         void set_kind(type t); /* set the type of the value. */
-        value* s_expression(); /* create an empty s-expression. */
-        value* q_expression(); /* create an empty quoted s-expression. */
+        static value* s_expression(); /* create an empty s-expression. */
+        static value* q_expression(); /* create an empty quoted s-expression. */
         void insert(value* v); /* insert a value into this (cell). */
         void move(value* v); /* move cells of v into this & delete v. */
 

@@ -1,9 +1,14 @@
+#include <algorithm>
 #include "environment.h"
+#include "value.h"
 
 namespace inky {
 
     environment::~environment() {
-        // clean-up the lisp values.
+        /* if storing raw pointer, we can't just erase the map, need to call delete. */
+        std::for_each(expressions.begin(),expressions.end(),[](const std::pair<std::string,value*>& kv) {
+            delete kv.second;
+        });
     }
 
     value* environment::lookup(const std::string &name) {
@@ -21,6 +26,5 @@ namespace inky {
     void environment::insert(const std::string &name, value* v) {
         expressions[name] = v;
     }
-
 
 }
