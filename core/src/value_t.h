@@ -12,7 +12,6 @@ namespace inky {
         location loc;        /* Position in the code that generated the error. */
     };
 
-
     /* Forward declarations. */
     class value;
     class environment;
@@ -22,7 +21,5 @@ namespace inky {
      * value may be a vector of values.
      */
     typedef std::function<value*(std::shared_ptr<environment>,value*)> function;
-
-
 
 }

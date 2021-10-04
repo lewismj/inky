@@ -35,6 +35,9 @@ namespace inky {
         explicit value(const std::string& s) : kind(type::Symbol) { var = s; }
         explicit value(const function& f): kind(type::Function) { var = f;}
 
+        /* destructor. */
+        ~value();
+
         void set_kind(type t); /* set the type of the value. */
         value* s_expression(); /* create an empty s-expression. */
         value* q_expression(); /* create an empty quoted s-expression. */

@@ -4,7 +4,9 @@
 
 namespace inky {
 
-    /** Define value ops; builtins etc. */
+    value::~value() {
+        // clean up cells.
+    }
 
     void value::set_kind(value::type t) {
        kind = t;
