@@ -6,7 +6,7 @@ include_directories(${CMAKE_BINARY_DIR}/_deps/utf8proc-src)    # utf8 library.
 
 # define sources/headers:
 set (SOURCES src/repl.cpp src/environment.cpp src/parser.cpp src/value.cpp)
-set (HEADERS src/repl.h src/environment.h src/parser.h src/value.h src/parser_t.h src/unicode.h)
+set (HEADERS src/repl.h src/environment.h src/parser.h src/value.h src/parser_t.h src/unicode.h src/value_t.h)
 
 # library definition:
 add_library(${PROJECT_NAME} ${SOURCES})

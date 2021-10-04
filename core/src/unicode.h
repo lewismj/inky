@@ -3,8 +3,11 @@
 #include <utf8proc.h>
 
 
+/* TBD: Not currently used. */
+
 namespace inky::unicode
 {
+
     size_t is_category(std::string_view input, const std::initializer_list<int>& categories) {
         utf8proc_int32_t cp = { };
         auto sz = utf8proc_iterate((const uint8_t*) input.data(), input.size(), &cp);
@@ -34,4 +37,5 @@ namespace inky::unicode
     size_t is_digit(std::string_view str) {
         return is_category(str, { UTF8PROC_CATEGORY_ND });
     }
+
 }

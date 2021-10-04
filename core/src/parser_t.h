@@ -73,32 +73,4 @@ namespace inky::parser {
         return a.var != b.var;
     }
 
-    struct location {
-        size_t begin;
-        size_t length;
-    };
-
-    /* parser error message; can replace the placeholder 'error' used by value? */
-    struct error {
-        std::string message;
-        location loc;
-    };
-
-    enum class token_type {
-        Invalid,
-        EndOfInput
-    };
-
-    struct token {
-        token() = default;
-        ~token() = default;
-
-        token(token_type t,  std::string_view txt) : type(t),  text(txt) {}
-        size_t size() const { return text.size(); }
-        explicit operator token_type() const { return type; }
-
-        std::string_view text;
-        token_type type = token_type::Invalid;
-    };
-
 }
