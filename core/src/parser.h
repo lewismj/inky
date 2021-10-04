@@ -53,10 +53,6 @@ namespace inky::parser {
      *      atom = symbol | string_literal | ... etc...
      */
 
-    class value; /* forward declaration of value. */
-
-    /* The lexer, take the input string and create a vector of token. */
     either<error,value*> parse(std::string_view input);
-
 
 }
