@@ -1,3 +1,4 @@
+#include <cmath>
 #include <optional>
 #include <regex>
 #include <sstream>
@@ -6,6 +7,8 @@
 #include "parser_t.h"
 #include "unicode.h"
 #include "value.h"
+
+#include <iostream>
 
 
 namespace inky::parser {
@@ -23,6 +26,13 @@ namespace inky::parser {
      */
 
     /* Implements simple recursive descent parser (&lexer). */
+
+
+    /*
+     * This is all WIP.
+     *
+     */
+
     class parser {
     public:
         explicit parser(std::string_view input) : i(input.begin()), e(input.end()) {}
@@ -43,10 +53,13 @@ namespace inky::parser {
         }
 
         either<error,value*> read_value() {  /* read the next value. */
+            std::cout << "Read value... " << std::endl;
             skip_whitespace();
+            std::cout << "read value, skipped whitespace" << "\n";
+            std::cout << "next char is["  << *i << "]" << std::endl;
             if ( i == e) return error { "parse error, eoi."};
-
             if ( *i == '(') { /* s-expression. */
+                std::cout << "s-expression... " << std::endl;
                 i++;
                 return read_expr();
             }
@@ -62,16 +75,53 @@ namespace inky::parser {
                 }
             } /* ATOMS - string_literal | integer | double | ... | symbol */
             else if ( *i == '\"')  {
+                std::cout << "string literal" << "\n";
                 return read_string_literal();
+            } /* +-[0-9] is number; + n ; symbol number.; number is int if atoi = atof; i.e. modf = 0.0 */
+            else if (std::isdigit(*i)  || ( (*i == '+'|| *i=='-') && std::isdigit(*(i+1)))) {
+                std::cout << "number" << std::endl;
+                double sign = 1;
+                if ( (*i == '+' ||  *i == '-')) {
+                    sign = *i == '+' ? 1 : -1;
+                    i++;
+                }
+                double val = 0.0;
+                double power = 0.0;
+                for (val = 0.0; std::isdigit(*i);i++)
+                    val = 10.0 * val + ( *i - '0');
+                if (*i == '.') i++;
+                for (power = 1.0; std::isdigit(*i);i++) {
+                    val = 10.0 * val + (*i  - '0');
+                    power *= 10.0;
+                }
+                val = sign * val/power;
+
+                std::cout << "value=[" << val << "] check if long or double..." << std::endl;
+                /* is long or double? */
+                double n =0;
+                double frac = std::modf(val,&n);
+                if (frac == 0.0) { /* exactly zero => long. */
+                    std::cout << "modf ... indicates long" << std::endl;
+                    return new value ( (long) val);
+                } else {
+                    std::cout << "modf .. indicates double" << std::endl;
+                    return new value(val);
+                }
+            }
+            else if (strchr( "abcdefghijklmnopqrstuvwxyz"
+                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                "0123456789_+-*\\/=<>!&", *i)) {
+                return read_symbol();
             }
 
-            skip_whitespace();
-            return error {"not yet implemented."};
+            //skip_whitespace();
+            return error {"parser error, unexpected token."};
         }
 
 
         either<error,value*> read_expr(bool is_quoted = false) { /* read an s-expression or quoted s-expression. */
             value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
+            std::cout << "reading expression .. " << std::endl;
             while (*i != ')') { /* keep reading values ... */
                 auto j = read_value();
                 if ( j.is_right() ) {
@@ -82,6 +132,17 @@ namespace inky::parser {
                 }
             }
             return val;
+        }
+
+        either<error,value*> read_symbol() {
+            std::ostringstream os;
+            while (strchr( "abcdefghijklmnopqrstuvwxyz"
+                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                "0123456789_+-*\\/=<>!&", *i) && *i != '\0') {
+               os << *i;
+               i++;
+            }
+            return new value(os.str());
         }
 
         either <error,value*> read_string_literal() { /* read string literal. */

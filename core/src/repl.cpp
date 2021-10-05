@@ -4,10 +4,21 @@
 
 #include "repl.h"
 #include "parser.h"
+#include "value.h"
+
+
+/** WIP. **/
 
 namespace inky::repl {
 
     void print_eval(repl_context &ctx, std::string_view input) {
+        auto v = inky::parser::parse(input);
+        if ( v.is_right() ) {
+            std::cout << "parsed ok.." << std::endl;
+
+        } else {
+            std::cerr << v.left_value().message << "\n";
+        }
     }
 
     void run_repl_command(repl_context &ctx, std::string_view input) {
