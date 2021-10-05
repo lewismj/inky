@@ -53,13 +53,9 @@ namespace inky::parser {
         }
 
         either<error,value*> read_value() {  /* read the next value. */
-            std::cout << "Read value... " << std::endl;
             skip_whitespace();
-            std::cout << "read value, skipped whitespace" << "\n";
-            std::cout << "next char is["  << *i << "]" << std::endl;
             if ( i == e) return error { "parse error, eoi."};
             if ( *i == '(') { /* s-expression. */
-                std::cout << "s-expression... " << std::endl;
                 i++;
                 return read_expr();
             }
@@ -70,16 +66,13 @@ namespace inky::parser {
                     return read_expr(true);
                 }
                 else { /* syntax error, expecting '(' */
-                    /* TODO - need to enrich with location information, we have the view_iterator i. */
                     return left(error {"parse error, expecting '(' after quote"});
                 }
             } /* ATOMS - string_literal | integer | double | ... | symbol */
             else if ( *i == '\"')  {
-                std::cout << "string literal" << "\n";
                 return read_string_literal();
             } /* +-[0-9] is number; + n ; symbol number.; number is int if atoi = atof; i.e. modf = 0.0 */
             else if (std::isdigit(*i)  || ( (*i == '+'|| *i=='-') && std::isdigit(*(i+1)))) {
-                std::cout << "number" << std::endl;
                 double sign = 1;
                 if ( (*i == '+' ||  *i == '-')) {
                     sign = *i == '+' ? 1 : -1;
@@ -95,16 +88,11 @@ namespace inky::parser {
                     power *= 10.0;
                 }
                 val = sign * val/power;
-
-                std::cout << "value=[" << val << "] check if long or double..." << std::endl;
-                /* is long or double? */
-                double n =0;
+                double n = 0;
                 double frac = std::modf(val,&n);
                 if (frac == 0.0) { /* exactly zero => long. */
-                    std::cout << "modf ... indicates long" << std::endl;
                     return new value ( (long) val);
                 } else {
-                    std::cout << "modf .. indicates double" << std::endl;
                     return new value(val);
                 }
             }
@@ -114,14 +102,13 @@ namespace inky::parser {
                 return read_symbol();
             }
 
-            //skip_whitespace();
+            //skip_whitespace(); ... do we need skip whitespace here?
             return error {"parser error, unexpected token."};
         }
 
 
         either<error,value*> read_expr(bool is_quoted = false) { /* read an s-expression or quoted s-expression. */
             value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
-            std::cout << "reading expression .. " << std::endl;
             while (*i != ')') { /* keep reading values ... */
                 auto j = read_value();
                 if ( j.is_right() ) {
