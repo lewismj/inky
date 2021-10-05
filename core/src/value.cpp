@@ -11,22 +11,6 @@ namespace inky {
         });
     }
 
-    void value::set_kind(value::type t) {
-       kind = t;
-    }
-
-    value* value::s_expression() {
-        auto* v = new value();
-        v->set_kind(type::SExpression);
-        return v;
-    }
-
-    value* value::q_expression() {
-        auto* v = new value();
-        v->set_kind(type::QExpression);
-        return v;
-    }
-
     void value::insert(value* v) {
         cells.push_back(v);
     }

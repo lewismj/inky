@@ -5,14 +5,7 @@
 
 namespace inky::parser {
 
-    /*
-     * Types used by the parser:
-     *  1. Haskell data.Either replacement; TODO - implement right/left map
-     *  2. location - a position (start position and length) in input string.
-     *  3. error - a concrete error type for parser.
-     *  4. token_type - different types of allowable tokens.
-     *  5. token - a parser token.
-     */
+    /* Haskell data.Either (quick) replacement; TODO - implement right/left map. */
 
     /* left .. part of either. */
     template<typename T> struct left {

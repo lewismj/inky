@@ -2,7 +2,7 @@
 
 namespace inky {
 
-    struct location {
+    struct location { /* Location in string_view of the error. */
         size_t begin;
         size_t length;
     };
@@ -16,10 +16,7 @@ namespace inky {
     class value;
     class environment;
 
-    /* function, note l_val may be a vector of val (recursively defined) we can define fn
-     * as: f: environment . value -> value,
-     * value may be a vector of values.
-     */
+    /* function; * as: f: environment . value -> value. */
     typedef std::function<value*(std::shared_ptr<environment>,value*)> function;
 
 }

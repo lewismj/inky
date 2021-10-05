@@ -26,8 +26,8 @@ namespace inky::parser {
 
     /* Given an iterator, skip over whitespace/comments. */
     void skip_whitespace(view_iterator i) {
-        while ( std::isspace(*i) && *i != '\0') {
-            if ( *i == ';')  while ( *i != '\n' && *i != '\0') i++;
+        while (std::isspace(*i) && *i != '\0') {
+            if (*i == ';')  while ( *i != '\n' && *i != '\0') i++;
             i++;
         }
     }
@@ -38,8 +38,8 @@ namespace inky::parser {
 
     /* Read an expression, s-expression or quoted s-expression. */
     either<error,value*> read_expr(view_iterator i, view_iterator end, bool is_quoted = false) {
-        value* val = is_quoted ? value::q_expression() : value::s_expression();
-        while ( i != end ) { /* keep reading values ... */
+        value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
+        while (*i != ')') { /* keep reading values ... */
           auto j = read_value(i,end);
           if ( j.is_right() ) {
              val->insert(j.right_value());
@@ -69,7 +69,7 @@ namespace inky::parser {
 
     either<error,value*> read_value(view_iterator i, view_iterator end) {
         skip_whitespace(i);
-        if ( i == end) return right(&null_opt);
+        if ( i == end) return error { "parse error, eoi."};
 
         if ( *i == '(') { /* s-expression. */
             i++;

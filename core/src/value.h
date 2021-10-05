@@ -18,8 +18,7 @@ namespace inky {
     class value {
     public:
 
-        enum class type {
-            NulOp,
+        enum class type { /* primitives, n.b. prelude itself will bootstrap other types. */
             Integer,
             Double,
             String,
@@ -29,8 +28,6 @@ namespace inky {
             QExpression /* placeholder for quoted s-expression. */
         };
 
-        /* constructors for primitives */
-        explicit value() : kind(type::NulOp) {} /* 'Special value' eval should skip. */
         explicit value(const long l)   : kind(type::Integer) { var = l; }
         explicit value(const double d) : kind(type::Double) { var = d; }
         explicit value(const std::string& s) : kind(type::Symbol) { var = s; }
@@ -39,17 +36,17 @@ namespace inky {
             var = s;
         }
         explicit value(const function& f): kind(type::Function) { var = f;}
+        explicit value(type t) { kind = t;}
 
         /* destructor. */
         ~value();
 
-        void set_kind(type t); /* set the type of the value. */
-        static value* s_expression(); /* create an empty s-expression. */
-        static value* q_expression(); /* create an empty quoted s-expression. */
         void insert(value* v); /* insert a value into this (cell). */
         void move(value* v); /* move cells of v into this & delete v. */
 
     private:
+
+
         type kind; /* The type of the value, basic type. */
 
         /* 'stack' values. */
@@ -59,5 +56,4 @@ namespace inky {
         std::shared_ptr<environment> env; /* lambda environment. */
     };
 
-    static value null_opt;
 }
