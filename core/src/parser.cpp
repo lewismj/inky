@@ -1,7 +1,7 @@
 #include <optional>
 #include <regex>
-#include <string>
 #include <sstream>
+#include <string>
 
 #include "parser_t.h"
 #include "unicode.h"
@@ -22,81 +22,92 @@ namespace inky::parser {
      *            ; find simpler/better combinator than boost spirit.
      */
 
-    using view_iterator = std::string_view::const_iterator;
+    /* Implements simple recursive descent parser (&lexer). */
+    class parser {
+    public:
+        explicit parser(std::string_view input) : i(input.begin()), e(input.end()) {}
+        ~parser() = default;
 
-    /* Given an iterator, skip over whitespace/comments. */
-    void skip_whitespace(view_iterator i) {
-        while (std::isspace(*i) && *i != '\0') {
-            if (*i == ';')  while ( *i != '\n' && *i != '\0') i++;
-            i++;
-        }
-    }
+        either<error,value*> parse() { return read_value(); }
 
+    private:
 
-    /* Declaration of core fn, read a value from the view iterator i position. */
-    either<error,value*> read_value(view_iterator i, view_iterator end);
-
-    /* Read an expression, s-expression or quoted s-expression. */
-    either<error,value*> read_expr(view_iterator i, view_iterator end, bool is_quoted = false) {
-        value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
-        while (*i != ')') { /* keep reading values ... */
-          auto j = read_value(i,end);
-          if ( j.is_right() ) {
-             val->insert(j.right_value());
-          } else {
-              delete val;
-              return j.left_value();
-          }
-        }
-        return val;
-    }
-
-   /* Read a string literal. */
-   either <error,value*> read_string_literal(view_iterator i, view_iterator end) {
-        ++i; /* move onto the string. */
-        std::ostringstream os;
-        while ( *i != '"') {
-            if ( *i == '\0' ) { /* reached eol before end quote. */
-                return error { "parser error, string literal not terminated."};
-            }
-            os << *i;
-            i++;
-        }
-        std::string literal(os.str());
-        return new value(literal,true);
-   }
-
-
-    either<error,value*> read_value(view_iterator i, view_iterator end) {
-        skip_whitespace(i);
-        if ( i == end) return error { "parse error, eoi."};
-
-        if ( *i == '(') { /* s-expression. */
-            i++;
-            return read_expr(i,end);
-        }
-        else if ( *i == '\'') { /* q-expression, quoted expression?. */
-            ++i;
-            if ( *i == '(') {
+        void skip_whitespace() { /* skip over any whitespace or comments. */
+            while (std::isspace(*i) &&  *i != '\0' && i != e) {
+                if (*i == ';') {
+                    while (*i != '\n' && *i != '\0') i++;
+                    return;
+                }
                 i++;
-                return read_expr(i, end, true);
             }
-            else { /* syntax error, expecting '(' */
-                /* TODO - need to enrich with location information, we have the view_iterator i. */
-                return left(error {"parse error, expecting '(' after quote"});
+        }
+
+        either<error,value*> read_value() {  /* read the next value. */
+            skip_whitespace();
+            if ( i == e) return error { "parse error, eoi."};
+
+            if ( *i == '(') { /* s-expression. */
+                i++;
+                return read_expr();
             }
-        } /* TODO- other clauses must be atoms = literal | symbol */
+            else if ( *i == '\'') { /* q-expression, quoted expression?. */
+                ++i;
+                if ( *i == '(') {
+                    i++;
+                    return read_expr(true);
+                }
+                else { /* syntax error, expecting '(' */
+                    /* TODO - need to enrich with location information, we have the view_iterator i. */
+                    return left(error {"parse error, expecting '(' after quote"});
+                }
+            } /* ATOMS - string_literal | integer | double | ... | symbol */
+            else if ( *i == '\"')  {
+                return read_string_literal();
+            }
+
+            skip_whitespace();
+            return error {"not yet implemented."};
+        }
 
 
-        skip_whitespace(i);
-        return error {"not yet implemented."};
-    }
+        either<error,value*> read_expr(bool is_quoted = false) { /* read an s-expression or quoted s-expression. */
+            value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
+            while (*i != ')') { /* keep reading values ... */
+                auto j = read_value();
+                if ( j.is_right() ) {
+                    val->insert(j.right_value());
+                } else {
+                    delete val;
+                    return j.left_value();
+                }
+            }
+            return val;
+        }
+
+        either <error,value*> read_string_literal() { /* read string literal. */
+            ++i; /* move onto the string. */
+            std::ostringstream os;
+            while ( *i != '"') {
+                if ( *i == '\0' ) { /* reached eol before end quote. */
+                    return error { "parser error, string literal not terminated."};
+                }
+                os << *i;
+                i++;
+            }
+            std::string literal(os.str());
+            return new value(literal,true);
+        }
+
+    private:
+        std::string_view::const_iterator i;  /* current position in the input view. */
+        std::string_view::const_iterator e;  /* the end of the input view. */
+    };
 
 
+    /* Invoke the parser; recursive descent. */
     either<error,value*> parse(std::string_view input) {
-        view_iterator i = input.begin();
-        return read_value(i, input.end());
+        parser p(input);
+        return p.parse();
     }
-
 
 }
