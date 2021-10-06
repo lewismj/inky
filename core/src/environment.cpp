@@ -11,7 +11,7 @@ namespace inky {
         });
     }
 
-    value* environment::lookup(const std::string &name) {
+    [[maybe_unused]] value* environment::lookup(const std::string &name) {
         auto i = expressions.find(name);
         if (i != expressions.end()) return i->second;
         else { // iteratively move up the outer environment scopes.

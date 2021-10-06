@@ -40,5 +40,5 @@ FetchContent_Declare(
 
 if (NOT catch2_POPULATED)
     FetchContent_Populate(catch2)
-    add_subdirectory(${catch2_SOURCE_DIR} ${catch2_BINARY_DIR})
+    add_subdirectory (${catch2_SOURCE_DIR} ${catch2_BINARY_DIR})
 endif()

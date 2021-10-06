@@ -11,3 +11,4 @@ endif(UNIX)
 add_subdirectory(extern) # get external dependencies.
 add_subdirectory(core)   # core system
 add_subdirectory(shell)  # executable.
+add_subdirectory(test)   # test-cases.

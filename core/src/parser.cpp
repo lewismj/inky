@@ -54,7 +54,10 @@ namespace inky::parser {
 
         either<error,value*> read_value() {  /* read the next value. */
             skip_whitespace();
-            if ( i == e) return error { "parse error, eoi."};
+            if ( i == e) {
+                /* TODO - Correct, we can add more info if we record previous token. */
+                return error { "parse error, eoi." };
+            }
             if ( *i == '(') { /* s-expression. */
                 i++;
                 return read_expr();
@@ -73,6 +76,7 @@ namespace inky::parser {
                 return read_string_literal();
             } /* +-[0-9] is number; + n ; symbol number.; number is int if atoi = atof; i.e. modf = 0.0 */
             else if (std::isdigit(*i)  || ( (*i == '+'|| *i=='-') && std::isdigit(*(i+1)))) {
+                /* TODO Add in check here; if we are following s-expression, then must skip and read symbol. */
                 double sign = 1;
                 if ( (*i == '+' ||  *i == '-')) {
                     sign = *i == '+' ? 1 : -1;
