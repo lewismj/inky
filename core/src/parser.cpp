@@ -8,8 +8,6 @@
 #include "unicode.h"
 #include "value.h"
 
-#include <iostream>
-
 
 namespace inky::parser {
 
@@ -76,7 +74,8 @@ namespace inky::parser {
                 return read_string_literal();
             } /* +-[0-9] is number; + n ; symbol number.; number is int if atoi = atof; i.e. modf = 0.0 */
             else if (std::isdigit(*i)  || ( (*i == '+'|| *i=='-') && std::isdigit(*(i+1)))) {
-                /* TODO Add in check here; if we are following s-expression, then must skip and read symbol. */
+                /* TODO Add in check here; if we are following s-expression, then must skip and read
+                 * as symbol, i.e. even allow someone to define a symbol +1? */
                 double sign = 1;
                 if ( (*i == '+' ||  *i == '-')) {
                     sign = *i == '+' ? 1 : -1;
@@ -84,8 +83,7 @@ namespace inky::parser {
                 }
                 double val = 0.0;
                 double power = 0.0;
-                for (val = 0.0; std::isdigit(*i);i++)
-                    val = 10.0 * val + ( *i - '0');
+                for (val = 0.0; std::isdigit(*i);i++) val = 10.0 * val + ( *i - '0');
                 if (*i == '.') i++;
                 for (power = 1.0; std::isdigit(*i);i++) {
                     val = 10.0 * val + (*i  - '0');
@@ -106,7 +104,6 @@ namespace inky::parser {
                 return read_symbol();
             }
 
-            //skip_whitespace(); ... do we need skip whitespace here?
             return error {"parser error, unexpected token."};
         }
 
@@ -122,6 +119,7 @@ namespace inky::parser {
                     return j.left_value();
                 }
             }
+            ++i; /* move past the end parenthesis. */
             return val;
         }
 
