@@ -6,9 +6,7 @@
 namespace inky {
 
     value::~value() {
-        std::for_each(cells.begin(),cells.end(),[](const auto* v) {
-            delete v;
-        });
+        for (const auto* c : cells) delete c;
     }
 
     void value::insert(value* v) {
