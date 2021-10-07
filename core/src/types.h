@@ -3,7 +3,8 @@
 #include <string>
 #include <variant>
 
-namespace inky::parser {
+
+namespace inky {
 
     /* Haskell data.Either (quick) replacement; TODO - implement right/left map. */
 
@@ -65,5 +66,23 @@ namespace inky::parser {
     template<typename L, typename R> bool operator!=(const either<L,R>& a, const either<L,R>& b) {
         return a.var != b.var;
     }
+
+
+    struct location { /* Location in string_view of the error. */
+        size_t begin;
+        size_t length;
+    };
+
+    struct error {
+        std::string message; /* Error message. */
+        location loc;        /* Position in the code that generated the error. */
+    };
+
+    /* Forward declarations. */
+    class value;
+    class environment;
+
+    /* function; * as: f: environment . value -> value. */
+    typedef std::function<either<error,value*>(std::shared_ptr<environment>,value*)> function;
 
 }

@@ -4,9 +4,9 @@
 #include <sstream>
 #include <string>
 
-#include "parser_t.h"
 #include "unicode.h"
 #include "value.h"
+#include "parser.h"
 
 
 namespace inky::parser {
@@ -24,13 +24,6 @@ namespace inky::parser {
      */
 
     /* Implements simple recursive descent parser (&lexer). */
-
-
-    /*
-     * This is all WIP.
-     *
-     */
-
     class parser {
     public:
         explicit parser(std::string_view input) : i(input.begin()), e(input.end()) {}
@@ -46,7 +39,7 @@ namespace inky::parser {
                     while (*i != '\n' && *i != '\0') i++;
                     return;
                 }
-                i++;
+                ++i;
             }
         }
 
@@ -57,13 +50,13 @@ namespace inky::parser {
                 return error { "parse error, eoi." };
             }
             if ( *i == '(') { /* s-expression. */
-                i++;
+                ++i;
                 return read_expr();
             }
             else if ( *i == '\'') { /* q-expression, quoted expression?. */
                 ++i;
                 if ( *i == '(') {
-                    i++;
+                    ++i;
                     return read_expr(true);
                 }
                 else { /* syntax error, expecting '(' */
@@ -79,7 +72,7 @@ namespace inky::parser {
                 double sign = 1;
                 if ( (*i == '+' ||  *i == '-')) {
                     sign = *i == '+' ? 1 : -1;
-                    i++;
+                    ++i;
                 }
                 double val = 0.0;
                 double power = 0.0;
@@ -129,7 +122,7 @@ namespace inky::parser {
                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                 "0123456789_+-*\\/=<>!&", *i) && *i != '\0') {
                os << *i;
-               i++;
+               ++i;
             }
             return new value(os.str());
         }
@@ -142,7 +135,7 @@ namespace inky::parser {
                     return error { "parser error, string literal not terminated."};
                 }
                 os << *i;
-                i++;
+                ++i;
             }
             std::string literal(os.str());
             return new value(literal,true);

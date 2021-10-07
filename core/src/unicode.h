@@ -4,7 +4,6 @@
 
 
 /* TBD: Not currently used. */
-
 namespace inky::unicode
 {
 

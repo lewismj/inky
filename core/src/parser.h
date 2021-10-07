@@ -5,8 +5,7 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
-#include "parser_t.h"
-#include "value_t.h"
+#include "types.h"
 
 /*
  * Defines a custom lexer/parser for the S-Expression based grammar.

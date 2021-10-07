@@ -10,9 +10,8 @@ set (HEADERS    src/repl.h
                 src/environment.h
                 src/parser.h
                 src/value.h
-                src/parser_t.h
                 src/unicode.h
-                src/value_t.h
+                src/types.h
                 src/eval.h,
                 src/builtin.h)
 
