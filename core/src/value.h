@@ -43,7 +43,7 @@ namespace inky {
         void insert(value *v); /* insert a value into this (cell). */
         void move(value *v); /* move cells of v into this & delete v. */
 
-
+        bool is_numeric() const { return kind == type::Double || kind == type::Integer; }
 
         type kind; /* The type of the value, basic type. */
 
