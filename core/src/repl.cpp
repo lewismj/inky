@@ -9,22 +9,22 @@
 #include "repl.h"
 
 
-namespace inky::repl {
+namespace inky {
 
-    class repl {
+    class repl_impl {
     public:
 
-        repl(repl_context context) : ctx(context), env(new environment()) {
+        explicit repl_impl(repl_context context) : ctx(context), env(new environment()) {
            // bootstrap the environment.
         }
 
-        ~repl() = default;
+        ~repl_impl() = default;
 
 
         void parse_eval(std::string_view input) {
-            auto v = inky::parser::parse(input);
+            auto v = inky::parse(input);
             if ( v.is_right() ) {
-                auto e = eval::eval(env,v.right_value());
+                auto e = eval(env,v.right_value());
                 if ( e.is_right() ) {
                     /* Output result of expression. */
                 } else {
@@ -87,8 +87,8 @@ namespace inky::repl {
 
 
 
-    void run(repl_context& ctx) {
-        repl r(ctx);
+    void repl(repl_context& ctx) {
+        repl_impl r(ctx);
         r.run();
     }
 

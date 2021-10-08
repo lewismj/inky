@@ -23,9 +23,11 @@ namespace inky {
             Double,
             String,
             Symbol,
+            BuiltinFunction,
             Function,
+            Lambda,
             SExpression,
-            QExpression /* placeholder for quoted s-expression. */
+            QExpression /* quoted s-expression. */
         };
 
         explicit value(const long l) : kind(type::Integer) { var = l; }
@@ -36,6 +38,10 @@ namespace inky {
             var = s;
         }
         explicit value(const function &f) : kind(type::Function) { var = f; }
+        explicit value(const function& f, bool builtin) {
+            kind = builtin ? type::BuiltinFunction : type::Function;
+            var = f;
+        }
         explicit value(type t) { kind = t; }
 
         ~value();
@@ -44,6 +50,7 @@ namespace inky {
         void move(value *v); /* move cells of v into this & delete v. */
 
         bool is_numeric() const { return kind == type::Double || kind == type::Integer; }
+        bool is_function() const  { return kind == type::Function || kind == type::BuiltinFunction; }
 
         type kind; /* The type of the value, basic type. */
 

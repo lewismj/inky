@@ -10,7 +10,7 @@
 /*
  * Defines a custom lexer/parser for the S-Expression based grammar.
  */
-namespace inky::parser {
+namespace inky {
 
     /*
      * Define simple S-expression grammar as follows:

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace inky::repl {
+namespace inky {
 
     /**
      * Defines types & functions for the REPL.
@@ -16,5 +16,5 @@ namespace inky::repl {
     };
 
     /* start the repl-loop. */
-    void run(repl_context& ctx);
+    void repl(repl_context& ctx);
 }

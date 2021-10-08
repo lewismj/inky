@@ -10,7 +10,7 @@
 #include "parser.h"
 
 
-namespace inky::parser {
+namespace inky {
 
     /*
      * Notes:

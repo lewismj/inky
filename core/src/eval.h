@@ -2,7 +2,7 @@
 
 #include "types.h"
 
-namespace inky::eval {
+namespace inky {
 
     /* Main evaluate,
      * for each expression; evaluate sub-expressions
