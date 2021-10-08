@@ -47,6 +47,8 @@ namespace inky {
 
         type kind; /* The type of the value, basic type. */
 
+        /* TODO - Support for lambda expressions. */
+
         /* 'stack' values. */
         std::variant<long, double, std::string, function> var;
 

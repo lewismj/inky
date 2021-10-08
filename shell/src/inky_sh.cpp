@@ -5,7 +5,7 @@
  */
 int main(int, char**) {
 
-    inky::repl::repl_context ctx;
+    inky::repl::repl_context ctx; /* Allow command line params to configure starting context. */
     inky::repl::run(ctx);
 
     return 0;

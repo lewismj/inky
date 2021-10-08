@@ -16,5 +16,5 @@ namespace inky::repl {
     };
 
     /* start the repl-loop. */
-    void run(repl_context &ctx);
+    void run(repl_context& ctx);
 }
