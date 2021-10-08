@@ -3,7 +3,6 @@
 #include <string>
 #include <variant>
 
-
 namespace inky {
 
     /* Haskell data.Either (quick) replacement; TODO - implement right/left map. */
@@ -82,7 +81,10 @@ namespace inky {
     class value;
     class environment;
 
+    using value_ptr = std::shared_ptr<value>;
+    using environment_ptr = std::shared_ptr<environment>;
+
     /* function; * as: f: environment . value -> value. */
-    typedef std::function<either<error,value*>(std::shared_ptr<environment>,value*)> function;
+    typedef std::function<either<error,value*>(std::shared_ptr<environment>,value_ptr)> function;
 
 }

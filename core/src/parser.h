@@ -52,6 +52,6 @@ namespace inky {
      *      atom = symbol | string_literal | ... etc...
      */
 
-    either<error,value*> parse(std::string_view input);
+    either<error,value_ptr> parse(std::string_view input);
 
 }

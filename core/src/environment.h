@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <string>
+#include "types.h"
 
 
 namespace inky {
@@ -13,22 +14,20 @@ namespace inky {
     class environment {
     public:
         environment() = default;
-
-        /* remove an environment and cleanup the values associated with it. */
-        ~environment();
+        ~environment() = default;
 
         /* returns the value* associated with the name, or nullptr if not exists. */
-        value* lookup(const std::string &name);
+        value_ptr lookup(const std::string &name);
 
         /* insert a value for a given name. */
-        void insert(const std::string &name, value* value);
+        void insert(const std::string &name, value_ptr value);
 
     private:
         /* hash map of values in the environment; the environment manages the ownership of values. */
-        std::unordered_map<std::string, value* > expressions;
+        std::unordered_map<std::string, value_ptr > expressions;
 
         /* the outer environment. */
-        std::shared_ptr <environment> outer;
+        environment_ptr outer;
     };
 
 }

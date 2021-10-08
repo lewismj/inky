@@ -8,6 +8,6 @@ namespace inky {
      * for each expression; evaluate sub-expressions
      * evaluate the top-level expression; given an environment.
      */
-    either<error,value*> eval(std::shared_ptr<environment> e, value* v);
+    either<error,value_ptr> eval(environment_ptr e, value_ptr v);
 
 }

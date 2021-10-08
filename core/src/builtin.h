@@ -1,9 +1,10 @@
 #pragma once
 
 #include "environment.h"
+#include "types.h"
 
 namespace inky::builtin {
 
-    void add_builtin_functions(std::shared_ptr<environment> e) {};
+    void add_builtin_functions(environment_ptr e) {};
 
 }

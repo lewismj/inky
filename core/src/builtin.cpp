@@ -32,11 +32,11 @@ namespace inky::builtin {
     namespace numeric {
 
         /*
-         * If we are computing (+,-,/,*) we reduce the cells of 'v' to the accumulated value.
+         * If we are computing (+,-,/,*) we reduce the cells of 'v' to the accumulated value
          * (i.e. these functions are not for unary '-' etc.
          * Need to check type and perform floating point calc. if needed.
          */
-        either<error, value *> builtin_op(std::shared_ptr<environment> e, value *v, opcode op) {
+        either<error, value_ptr> builtin_op(environment_ptr e, value_ptr v, opcode op) {
 
             /*
              * 1. check that we have cells to reduce.
@@ -45,7 +45,7 @@ namespace inky::builtin {
              *    If any cell is double, we set the accumulator to double
              *    and cast any long to double as we accumulate.
              *    Otherwise, we treat as integer.
-             * 3. On complete, we remove/delete the cells (expression is evaluated)
+             * 3. On complete, we remove/delete the cells
              *    and return the value (type will be double or integer).
              */
 
@@ -63,9 +63,9 @@ namespace inky::builtin {
             accumulator = is_double ? 0.0 : 0l;
 
             for (int i = 1; i < v->cells.size(); i++) {
-                value *cell = v->cells[i];
+                value_ptr cell = v->cells[i];
                 if (is_double) {
-                    /* either value is double or int, cast to double if int; accumulate double. */
+                    /* either value_ptr is double or int, cast to double if int; accumulate double. */
                     double cell_val =
                             cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
                                                                : std::get<double>(cell->var);
@@ -103,26 +103,26 @@ namespace inky::builtin {
                 }
             }
 
-            for (const auto i : v->cells) delete i; /* remove the cells. */
+            /* erase v->cells ??? */
 
-            if (is_double) return new value(std::get<double>(accumulator));
-            return new value(std::get<long>(accumulator));
+            if (is_double) return value_ptr( new value (std::get<double>(accumulator)));
+            return value_ptr( new value(std::get<long>(accumulator)));
         }
 
 
-        either<error, value *> builtin_add(std::shared_ptr<environment> e, value *v) {
+        either<error, value_ptr> builtin_add(environment_ptr e, value_ptr v) {
             return builtin_op(e, v, opcode::Add);
         }
 
-        either<error, value *> builtin_subtract(std::shared_ptr<environment> e, value *v) {
+        either<error, value_ptr> builtin_subtract(environment_ptr e, value_ptr v) {
             return builtin_op(e, v, opcode::Subtract);
         }
 
-        either<error, value *> builtin_divide(std::shared_ptr<environment> e, value *v) {
+        either<error, value_ptr> builtin_divide(environment_ptr e, value_ptr v) {
             return builtin_op(e, v, opcode::Divide);
         }
 
-        either<error, value *> builtin_multiply(std::shared_ptr<environment> e, value *v) {
+        either<error, value_ptr> builtin_multiply(environment_ptr e, value_ptr v) {
             return builtin_op(e, v, opcode::Multiply);
         }
 

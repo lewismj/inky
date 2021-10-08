@@ -61,7 +61,7 @@ namespace inky {
             repl_context ctx;
             ctx.flags = 0;
 
-            std::shared_ptr<environment> env(new environment());
+            environment_ptr env(new environment());
 
             /* TODO: Add builtin functions into the environment. */
 
@@ -81,7 +81,7 @@ namespace inky {
         }
 
     private:
-        std::shared_ptr<environment> env;
+        environment_ptr env;
         repl_context ctx;
     };
 

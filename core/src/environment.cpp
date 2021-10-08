@@ -5,14 +5,8 @@
 
 namespace inky {
 
-    environment::~environment() {
-        /* if storing raw pointer, we can't just erase the map, need to call delete. */
-        std::for_each(expressions.begin(),expressions.end(),[](const std::pair<std::string,value*>& kv) {
-            delete kv.second;
-        });
-    }
 
-    [[maybe_unused]] value* environment::lookup(const std::string &name) {
+    [[maybe_unused]] value_ptr environment::lookup(const std::string &name) {
         auto i = expressions.find(name);
         if (i != expressions.end()) return i->second;
         else { // iteratively move up the outer environment scopes.
@@ -24,7 +18,7 @@ namespace inky {
         return nullptr;
     }
 
-    void environment::insert(const std::string &name, value* v) {
+    void environment::insert(const std::string &name, value_ptr v) {
         expressions[name] = v;
     }
 

@@ -17,6 +17,7 @@ namespace inky {
     /* A value (Lisp value in this context) is a dynamically-typed hierarchical data structure
      * that represents ast node for s-expression(s).
      */
+
     struct value {
         enum class type { /* primitives, n.b. prelude itself will bootstrap other types. */
             Integer,
@@ -44,13 +45,13 @@ namespace inky {
         }
         explicit value(type t) { kind = t; }
 
-        ~value();
+        ~value() = default;
 
-        void insert(value *v); /* insert a value into this (cell). */
-        void move(value *v); /* move cells of v into this & delete v. */
+        void insert(value_ptr v); /* insert a value into this (cell). */
+        void move(value_ptr v); /* move cells of v into this & delete v. */
 
-        bool is_numeric() const { return kind == type::Double || kind == type::Integer; }
-        bool is_function() const  { return kind == type::Function || kind == type::BuiltinFunction; }
+        [[nodiscard]] bool is_numeric() const { return kind == type::Double || kind == type::Integer; }
+        [[nodiscard]] bool is_function() const  { return kind == type::Function || kind == type::BuiltinFunction; }
 
         type kind; /* The type of the value, basic type. */
 
@@ -59,7 +60,7 @@ namespace inky {
         /* 'stack' values. */
         std::variant<long, double, std::string, function> var;
 
-        std::vector<value *> cells;       /* s-expression values. */
+        std::vector<value_ptr> cells;       /* s-expression values. */
         std::shared_ptr<environment> env; /* lambda environment. */
     };
 }

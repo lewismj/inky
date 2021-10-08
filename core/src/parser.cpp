@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iterator>
+#include <memory>
 #include <optional>
 #include <regex>
 #include <sstream>
@@ -30,7 +31,7 @@ namespace inky {
         explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()) {}
         ~parser() = default;
 
-        either<error,value*> parse() { return read_expr(false,'\0'); }
+        either<error,value_ptr> parse() { return read_expr(false,'\0'); }
 
     private:
 
@@ -44,12 +45,12 @@ namespace inky {
             }
         }
 
-        either<error,value*> read_value() {  /* read the next value. */
+        either<error,value_ptr> read_value() {  /* read the next value. */
             skip_whitespace();
 
             /* when we read the expression, value, etc.. we don't return
              * immediately, since we want to remove whitespace after the read too. */
-            either<error,value*> rtn = nullptr;
+            either<error,value_ptr > rtn = value_ptr(nullptr);
 
             if ( i == e) {
                 size_t position = std::distance(b,i-1);
@@ -99,9 +100,9 @@ namespace inky {
                 double n = 0;
                 double frac = std::modf(val,&n);
                 if (frac == 0.0) { /* exactly zero => long. */
-                    rtn = new value ( (long) val);
+                    rtn = value_ptr(new value ( (long) val));
                 } else {
-                    rtn = new value(val);
+                    rtn = value_ptr(new value(val));
                 }
             }
             else if (strchr( "abcdefghijklmnopqrstuvwxyz"
@@ -120,7 +121,7 @@ namespace inky {
         }
 
 
-        either<error,value*> read_expr(bool is_quoted = false, char end_ch =')') { /* read an s-expression or quoted s-expression. */
+        either<error,value_ptr> read_expr(bool is_quoted = false, char end_ch =')') { /* read an s-expression or quoted s-expression. */
             value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
             while (*i != end_ch) { /* keep reading values ... */
                 auto j = read_value();
@@ -132,10 +133,10 @@ namespace inky {
                 }
             }
             ++i;
-            return val;
+            return value_ptr(val);
         }
 
-        either<error,value*> read_symbol() {
+        either<error,value_ptr> read_symbol() {
             std::ostringstream os;
             while (strchr( "abcdefghijklmnopqrstuvwxyz"
                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -144,10 +145,10 @@ namespace inky {
                ++i;
             }
             i++;
-            return new value(os.str());
+            return value_ptr(new value(os.str()));
         }
 
-        either <error,value*> read_string_literal() { /* read string literal. */
+        either <error,value_ptr> read_string_literal() { /* read string literal. */
             ++i; /* move onto the string. */
             std::string_view::const_iterator s = i; /* mark start of string, if we error. */
             std::ostringstream os;
@@ -162,7 +163,7 @@ namespace inky {
                 ++i;
             }
             std::string literal(os.str());
-            return new value(literal,true);
+            return value_ptr(new value(literal,true));
         }
 
     private:
@@ -173,7 +174,7 @@ namespace inky {
 
 
     /* Invoke the parser; recursive descent. */
-    either<error,value*> parse(std::string_view input) {
+    either<error,value_ptr> parse(std::string_view input) {
         parser p(input);
         return p.parse();
     }
