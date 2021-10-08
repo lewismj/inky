@@ -61,8 +61,6 @@ namespace inky {
             repl_context ctx;
             ctx.flags = 0;
 
-            environment_ptr env(new environment());
-
             /* TODO: Add builtin functions into the environment. */
 
             /* TODO: Load prelude. */
