@@ -1,4 +1,5 @@
 #include <cmath>
+#include <iterator>
 #include <optional>
 #include <regex>
 #include <sstream>
@@ -20,16 +21,16 @@ namespace inky::parser {
      *   4. Use utf8proc to make unicode compatible.
      *
      *   Next step; either convert to Flex/Bison? (can handle 'any' CFG, does -not- have to be LR(1).
-     *            ; find simpler/better combinator than boost spirit.
+     *            ; find simpler (or at least smaller!) parser combinator than boost spirit.
      */
 
     /* Implements simple recursive descent parser (&lexer). */
     class parser {
     public:
-        explicit parser(std::string_view input) : i(input.begin()), e(input.end()) {}
+        explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()) {}
         ~parser() = default;
 
-        either<error,value*> parse() { return read_value(); }
+        either<error,value*> parse() { return read_expr(false,'\0'); }
 
     private:
 
@@ -45,30 +46,39 @@ namespace inky::parser {
 
         either<error,value*> read_value() {  /* read the next value. */
             skip_whitespace();
+
+            /* when we read the expression, value, etc.. we don't return
+             * immediately, since we want to remove whitespace after the read too. */
+            either<error,value*> rtn = nullptr;
+
             if ( i == e) {
-                /* TODO - Correct, we can add more info if we record previous token. */
-                return error { "parse error, eoi." };
+                size_t position = std::distance(b,i-1);
+                return error { "parse error, expecting token, reached end of input:",
+                               location { position, 1} };
             }
             if ( *i == '(') { /* s-expression. */
                 ++i;
-                return read_expr();
+                rtn = read_expr();
             }
             else if ( *i == '\'') { /* q-expression, quoted expression?. */
-                ++i;
+                //++i;
+                skip_whitespace();
                 if ( *i == '(') {
                     ++i;
-                    return read_expr(true);
+                    rtn = read_expr(true);
                 }
                 else { /* syntax error, expecting '(' */
-                    return left(error {"parse error, expecting '(' after quote"});
+                    size_t position = std::distance(b,i-1);
+                    return left(error {"parse error, expecting '(' after quote:",
+                                       location { position, 2 }});
                 }
             } /* ATOMS - string_literal | integer | double | ... | symbol */
             else if ( *i == '\"')  {
-                return read_string_literal();
+                rtn = read_string_literal();
             } /* +-[0-9] is number; + n ; symbol number.; number is int if atoi = atof; i.e. modf = 0.0 */
             else if (std::isdigit(*i)  || ( (*i == '+'|| *i=='-') && std::isdigit(*(i+1)))) {
-                /* TODO Add in check here; if we are following s-expression, then must skip and read
-                 * as symbol, i.e. even allow someone to define a symbol +1? */
+                /* ? could check that number literal isn't in position of operator; or allow e.g. '+2' as an
+                 * symbol/operator that could be bound itself... ? */
                 double sign = 1;
                 if ( (*i == '+' ||  *i == '-')) {
                     sign = *i == '+' ? 1 : -1;
@@ -76,6 +86,9 @@ namespace inky::parser {
                 }
                 double val = 0.0;
                 double power = 0.0;
+
+                /* Only read valid number; i.e 2a is considered two tokens 2 and 'a';
+                 * can't have identifier 2a etc.. */
                 for (val = 0.0; std::isdigit(*i);i++) val = 10.0 * val + ( *i - '0');
                 if (*i == '.') i++;
                 for (power = 1.0; std::isdigit(*i);i++) {
@@ -86,24 +99,30 @@ namespace inky::parser {
                 double n = 0;
                 double frac = std::modf(val,&n);
                 if (frac == 0.0) { /* exactly zero => long. */
-                    return new value ( (long) val);
+                    rtn = new value ( (long) val);
                 } else {
-                    return new value(val);
+                    rtn = new value(val);
                 }
             }
             else if (strchr( "abcdefghijklmnopqrstuvwxyz"
                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                 "0123456789_+-*\\/=<>!&", *i)) {
-                return read_symbol();
+                rtn = read_symbol();
+            }
+            else {
+                size_t position = std::distance(b, i);
+                return error{"parse error, mismatched expression:", location{position, 1}};
             }
 
-            return error {"parser error, unexpected token."};
+            skip_whitespace();
+
+            return rtn;
         }
 
 
-        either<error,value*> read_expr(bool is_quoted = false) { /* read an s-expression or quoted s-expression. */
+        either<error,value*> read_expr(bool is_quoted = false, char end_ch =')') { /* read an s-expression or quoted s-expression. */
             value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
-            while (*i != ')') { /* keep reading values ... */
+            while (*i != end_ch) { /* keep reading values ... */
                 auto j = read_value();
                 if ( j.is_right() ) {
                     val->insert(j.right_value());
@@ -112,7 +131,7 @@ namespace inky::parser {
                     return j.left_value();
                 }
             }
-            ++i; /* move past the end parenthesis. */
+            ++i;
             return val;
         }
 
@@ -124,15 +143,20 @@ namespace inky::parser {
                os << *i;
                ++i;
             }
+            i++;
             return new value(os.str());
         }
 
         either <error,value*> read_string_literal() { /* read string literal. */
             ++i; /* move onto the string. */
+            std::string_view::const_iterator s = i; /* mark start of string, if we error. */
             std::ostringstream os;
             while ( *i != '"') {
                 if ( *i == '\0' ) { /* reached eol before end quote. */
-                    return error { "parser error, string literal not terminated."};
+                    size_t start = std::distance(b,s);
+                    size_t distance = std::distance(b,i) - start;
+                    location loc { start, distance };
+                    return error { "parse error, string literal not terminated:", loc };
                 }
                 os << *i;
                 ++i;
@@ -142,6 +166,7 @@ namespace inky::parser {
         }
 
     private:
+        std::string_view::const_iterator b;  /* the beginning of the input. */
         std::string_view::const_iterator i;  /* current position in the input view. */
         std::string_view::const_iterator e;  /* the end of the input view. */
     };

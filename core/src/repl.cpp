@@ -11,13 +11,22 @@
 
 namespace inky::repl {
 
+
     void print_eval(repl_context &ctx, std::string_view input) {
         auto v = inky::parser::parse(input);
         if ( v.is_right() ) {
             std::cout << "parsed ok.." << std::endl;
+            /* if parsed ok, try to evaluate... */
 
         } else {
-            std::cerr << v.left_value().message << "\n";
+            error e = v.left_value();
+            fmt::print( fg(fmt::terminal_color::green) | (fmt::emphasis::italic), "{}\n",e.message);
+            fmt::print( fg(fmt::terminal_color::green) | (fmt::emphasis::italic), "{}\n",input);
+
+            std::string underline;
+            if(e.loc.length >= 1) for(size_t i = 0; i < e.loc.length; i++) underline += "\u203e";
+            std::string s(e.loc.begin,' ');
+            fmt::print(fg(fmt::terminal_color::red) | (fmt::emphasis::bold), "{}{}\n",s,underline);
         }
     }
 
