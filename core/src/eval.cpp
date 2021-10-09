@@ -13,6 +13,9 @@ namespace inky {
         explicit eval_impl(environment_ptr e): env(e) {}
         ~eval_impl() = default;
 
+
+
+
         either<error,value_ptr> eval_fn(value_ptr f, value_ptr a) {
             if ( f->kind == value::type::BuiltinFunction ) {
                 auto fn = std::get<function>(f->var);
@@ -76,6 +79,11 @@ namespace inky {
     either<error,value_ptr> eval(environment_ptr e, value_ptr v) {
         eval_impl i(e);
         return i.eval(v);
+    }
+
+    either<error,value_ptr> eval(environment_ptr e, either<error, value_ptr> v) {
+        if ( v.is_left()) return v.left_value();
+        else return eval(e,v.right_value());
     }
 
 }

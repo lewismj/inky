@@ -10,4 +10,6 @@ namespace inky {
      */
     either<error,value_ptr> eval(environment_ptr e, value_ptr v);
 
+    // utility; todo- implement right_map, left_map on the either type.
+    either<error,value_ptr> eval(environment_ptr e, either<error, value_ptr> v);
 }

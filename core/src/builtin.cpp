@@ -21,12 +21,11 @@ namespace inky::builtin {
      *
      * No type-classes/semi-group ...
      */
+
     using integer_op = std::function<long(const long&, const long&)>;
-    using double_op  = std::function<long(const double& d, const double&)>;
-    struct numeric_operators {
-        integer_op  f;
-        double_op   g;
-    };
+    using double_op  = std::function<double(const double& d, const double&)>;
+
+    struct numeric_operators { integer_op  f; double_op   g; };
 
 
     either<error, value_ptr> builtin_op(environment_ptr ignore, value_ptr v, numeric_operators nop) {
@@ -62,30 +61,26 @@ namespace inky::builtin {
                     cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
                                                        : std::get<double>(cell->var);
 
-            accumulator = cell_val;
+            accumulator =  cell_val;
         } else {
             accumulator = std::get<long>(cell->var);
         }
 
-
         for (int i = 1; i < v->cells.size(); i++) {
-            value_ptr cell = v->cells[i];
+            value_ptr c= v->cells[i];
 
             try {
                 if (is_double) {
                     /* either value_ptr is double or int, cast to double if int; accumulate double. */
                     double cell_val =
-                            cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
-                                                               : std::get<double>(cell->var);
-                    accumulator = nop.g(std::get<double>(accumulator), cell_val);
-
+                            c->kind == value::type::Integer ? (double) std::get<long>(c->var) : std::get<double>(c->var);
+                    accumulator = (double) nop.g(std::get<double>(accumulator), cell_val);
                 } else {
-                    accumulator = nop.f(std::get<long>(accumulator), std::get<long>(cell->var));
+                    accumulator = nop.f(std::get<long>(accumulator), std::get<long>(c->var));
                 }
-            } catch ( const std::exception& e) {
+            } catch ( const std::runtime_error& e) {
                 return error { fmt::format("eval error, caught exception: {}", e.what())};
             }
-
         }
 
         /* erase v->cells ??? */
@@ -95,37 +90,30 @@ namespace inky::builtin {
         return value_ptr(new value(std::get<long>(accumulator)));
     }
 
+    template<typename T> T add(const T& a, const T& b) { return a+b; }
+    template<typename T> T subtract(const T& a, const T& b) { return a-b; }
+    template<typename T> T multiply(const T& a, const T& b) { return a*b; }
+    template<typename T> T divide(const T& a, const T& b) {
+        if ( b == 0 ) {
+           throw std::runtime_error("eval error, divide by zero.");
+        }
+        return a/b;
+    }
 
     either<error, value_ptr> builtin_add(environment_ptr e, value_ptr v) {
-        numeric_operators ops {
-                [](const long &a, const long &b) { return a + b; },
-                [](const double& a, const double& b) { return a + b; }
-        };
-        return builtin_op(e,v,ops);
+        return builtin_op(e,v, { add<long>, add<double> });
     }
 
     either<error, value_ptr> builtin_subtract(environment_ptr e, value_ptr v) {
-        numeric_operators ops {
-                [](const long &a, const long &b) { return a - b; },
-                [](const double& a, const double& b) { return a - b; }
-        };
-        return builtin_op(e,v, ops);
+        return builtin_op(e,v, { subtract<long>, subtract<double> });
     }
 
     either<error, value_ptr> builtin_divide(environment_ptr e, value_ptr v) {
-        numeric_operators ops {
-                [](const long &a, const long &b) { return a / b; },
-                [](const double& a, const double& b) { return a / b; }
-        };
-        return builtin_op(e,v, ops);
+        return builtin_op(e,v,{ divide<long>, divide<double> });
     }
 
     either<error, value_ptr> builtin_multiply(environment_ptr e, value_ptr v) {
-        numeric_operators ops {
-                [](const long &a, const long &b) { return a * b; },
-                [](const double& a, const double& b) { return a * b; }
-        };
-        return builtin_op(e,v, ops);
+        return builtin_op(e,v,{multiply<long>,multiply<double>});
     }
 
 

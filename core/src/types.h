@@ -68,7 +68,6 @@ namespace inky {
     }
 
     template<typename L,typename R> std::ostream& operator<<(std::ostream& os, either<L,R>& result) {
-        std::cout << "**** operator ***" << std::endl;
         result ? os << result.right_value() : os << result.left_value();
         return os;
     }

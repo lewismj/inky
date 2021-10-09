@@ -28,7 +28,8 @@ namespace inky {
                 auto clr = result ? fg(fmt::terminal_color::green) | (fmt::emphasis::bold)
                         : fg(fmt::terminal_color::red) | (fmt::emphasis::bold);
 
-                fmt::print(clr,"{}\n",result.right_value());
+                if (result) fmt::print(clr,"{}\n",result.right_value());
+                else fmt::print(clr,"{}\n",result.left_value().message);
             } else {
                 error e = v.left_value();
                 fmt::print( fg(fmt::terminal_color::green) | (fmt::emphasis::italic), "{}\n",e.message);
