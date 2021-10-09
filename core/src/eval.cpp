@@ -14,8 +14,6 @@ namespace inky {
         ~eval_impl() = default;
 
 
-
-
         either<error,value_ptr> eval_fn(value_ptr f, value_ptr a) {
             if ( f->kind == value::type::BuiltinFunction ) {
                 auto fn = std::get<function>(f->var);
@@ -56,18 +54,19 @@ namespace inky {
                     else return error{fmt::format("eval error, unbound symbol {}", key)};
                 }
 
-                /* If v is a literal, return it. */
+                /* If v is an s-expression, evaluate sub-expressions then the expression itself.*/
+                case value::type::SExpression:
+                    return eval_sexpression(v);
+                    break;
+
+                /* Otherwise return value. */
                 case value::type::Integer:
                 case value::type::Double:
                 case value::type::String:
+                case value::type::QExpression:
+                case value::type::BuiltinFunction:
+                case value::type::Function:
                     return v;
-
-               /* If v is an s-expression, evaluate sub-expressions then the expression itself.*/
-                case value::type::SExpression:
-                    return eval_sexpression(v);
-
-                default:
-                    return error { "eval error, not yet implemented."};
             }
         }
 

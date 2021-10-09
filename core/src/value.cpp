@@ -28,7 +28,6 @@ namespace inky {
             case value::type::BuiltinFunction:
                 os << "<builtin function>";
                 break;
-            case value::type::Lambda:
             case value::type::Function:
             case value::type::SExpression:
             case value::type::QExpression:
@@ -56,9 +55,6 @@ namespace inky {
                 break;
             case value::type::Function:
                 os << "<function>";
-                break;
-            case value::type::Lambda:
-                os << "<lambda>";
                 break;
             case value::type::SExpression:
                 os << "<sexpression>";

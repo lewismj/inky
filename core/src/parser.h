@@ -7,9 +7,7 @@
 #include <vector>
 #include "types.h"
 
-/*
- * Defines a custom lexer/parser for the S-Expression based grammar.
- */
+/* Defines a custom lexer/parser for the S-Expression based grammar. */
 namespace inky {
 
     /*

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <optional>
 #include <string>
 #include <variant>
 #include <deque>
@@ -26,7 +27,6 @@ namespace inky {
             Symbol,
             BuiltinFunction,
             Function,
-            Lambda,
             SExpression,
             QExpression /* quoted s-expression. */
         };
@@ -55,13 +55,16 @@ namespace inky {
 
         type kind; /* The type of the value, basic type. */
 
-        /* TODO - Support for lambda expressions. */
-
         /* 'stack' values. */
         std::variant<long, double, std::string, function> var;
+        std::deque<value_ptr> cells;            /* s-expression values. */
 
-        std::deque<value_ptr> cells;       /* s-expression values. */
-        std::shared_ptr<environment> env;  /* lambda environment. */
+        struct lambda {
+            value_ptr formals;                  /* arguments. */
+            value_ptr body;                     /* value_ptr of kind function. */
+            std::shared_ptr<environment> env;   /* environment of the lambda. */
+        };
+        std::optional<lambda> lambda_exp;
     };
 
     std::ostream& operator<<(std::ostream& os, const value_ptr value);
