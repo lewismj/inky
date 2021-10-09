@@ -13,7 +13,7 @@ namespace inky {
         std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
     }
 
-    std::ostream& operator<<(std::ostream& os, value_ptr value) {
+    std::ostream& operator<<(std::ostream& os, const value_ptr value) {
         switch (value->kind) {
             case value::type::String:
             case value::type::Symbol:
@@ -35,11 +35,10 @@ namespace inky {
                 os << "<unevaluated expression>";
                 break;
         }
-        os << "\n";
         return os;
     }
 
-    std::ostream& operator<<(std::ostream& os, value::type kind) {
+    std::ostream& operator<<(std::ostream& os, const value::type kind) {
         switch (kind) {
             case value::type::String:
                 os << "<string>";
@@ -68,7 +67,6 @@ namespace inky {
                 os << "<qexpression>";
                 break;
         }
-        os << "\n";
 
         return os;
     }

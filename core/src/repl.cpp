@@ -2,6 +2,7 @@
 #include <string>
 #include <fmt/core.h>
 #include <fmt/color.h>
+#include <fmt/ostream.h>
 
 #include "value.h"
 #include "environment.h"
@@ -9,7 +10,7 @@
 #include "parser.h"
 #include "eval.h"
 #include "repl.h"
-
+#include "types.h"
 
 namespace inky {
 
@@ -23,10 +24,11 @@ namespace inky {
         void parse_eval(std::string_view input) {
             auto v = inky::parse(input);
             if ( v.is_right() ) {
-                auto e = eval(env,v.right_value());
-                auto clr = e ? fg(fmt::terminal_color::green) | (fmt::emphasis::bold)
+                either<error,value_ptr> result = eval(env,v.right_value());
+                auto clr = result ? fg(fmt::terminal_color::green) | (fmt::emphasis::bold)
                         : fg(fmt::terminal_color::red) | (fmt::emphasis::bold);
-                fmt::print(clr,"{}",e);
+
+                fmt::print(clr,"{}\n",result.right_value());
             } else {
                 error e = v.left_value();
                 fmt::print( fg(fmt::terminal_color::green) | (fmt::emphasis::italic), "{}\n",e.message);

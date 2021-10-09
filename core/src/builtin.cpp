@@ -29,7 +29,7 @@ namespace inky::builtin {
     };
 
 
-    either<error, value_ptr> builtin_op(environment_ptr e, value_ptr v, numeric_operators nop) {
+    either<error, value_ptr> builtin_op(environment_ptr ignore, value_ptr v, numeric_operators nop) {
         /*
          * 1. check that we have cells to reduce.
          * 2. runtime type check:
@@ -52,7 +52,21 @@ namespace inky::builtin {
 
         /* If we have a double then any integer value should be cast to double. */
         std::variant<long, double> accumulator;
-        accumulator = is_double ? 0.0 : 0l;
+
+        /* make sure variant has correct type. */
+        //accumulator = is_double ? static_cast<double>(0.0) : static_cast<long>(0);
+
+        value_ptr cell = v->cells[0];
+        if ( is_double ) {
+            double cell_val =
+                    cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
+                                                       : std::get<double>(cell->var);
+
+            accumulator = cell_val;
+        } else {
+            accumulator = std::get<long>(cell->var);
+        }
+
 
         for (int i = 1; i < v->cells.size(); i++) {
             value_ptr cell = v->cells[i];
@@ -117,10 +131,10 @@ namespace inky::builtin {
 
     void add_builtin_functions(environment_ptr e) {
         /* basic numerics. */
-        e->insert("+",value_ptr(new value(builtin_add)));
-        e->insert("-",value_ptr(new value(builtin_subtract)));
-        e->insert("*",value_ptr(new value(builtin_multiply)));
-        e->insert("/",value_ptr(new value(builtin_divide)));
+        e->insert("+",value_ptr(new value(builtin_add, true)));
+        e->insert("-",value_ptr(new value(builtin_subtract, true)));
+        e->insert("*",value_ptr(new value(builtin_multiply, true)));
+        e->insert("/",value_ptr(new value(builtin_divide, true)));
 
         /* basic list. */
 

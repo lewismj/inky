@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include <variant>
-#include <vector>
+#include <deque>
 #include "types.h"
 
 
@@ -60,10 +60,10 @@ namespace inky {
         /* 'stack' values. */
         std::variant<long, double, std::string, function> var;
 
-        std::vector<value_ptr> cells;       /* s-expression values. */
+        std::deque<value_ptr> cells;       /* s-expression values. */
         std::shared_ptr<environment> env;  /* lambda environment. */
     };
 
-    std::ostream& operator<<(std::ostream& os, value_ptr value);
-    std::ostream& operator<<(std::ostream& os, value::type kind);
+    std::ostream& operator<<(std::ostream& os, const value_ptr value);
+    std::ostream& operator<<(std::ostream& os, const value::type kind);
 }
