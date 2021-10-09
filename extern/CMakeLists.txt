@@ -6,9 +6,9 @@ include(FetchContent)
 
 # Format {fmt} library, type-safe printf.
 FetchContent_Declare(
-    fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG 8.0.1
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG 8.0.1
 )
 
 FetchContent_GetProperties(fmt)
@@ -17,25 +17,12 @@ if(NOT fmt_POPULATED)
     add_subdirectory(${fmt_SOURCE_DIR} ${fmt_BINARY_DIR})
 endif()
 
-# Unicode library from Julia repo.
-FetchContent_Declare(
-    utf8proc
-    GIT_REPOSITORY https://github.com/JuliaStrings/utf8proc
-    GIT_TAG v2.6.1
-)
-
-FetchContent_GetProperties(utf8proc)
-if(NOT utf8proc_POPULATED)
-    FetchContent_Populate(utf8proc)
-    add_subdirectory(${utf8proc_SOURCE_DIR} ${utf8proc_BINARY_DIR})
-endif()
-
 
 # Testing framework, Catch2
 FetchContent_Declare(
-    catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG v2.13.7
+        catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v2.13.7
 )
 
 if (NOT catch2_POPULATED)

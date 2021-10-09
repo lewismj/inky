@@ -2,7 +2,6 @@ project(inky-core)
 
 # add external include paths:
 include_directories(${CMAKE_BINARY_DIR}/_deps/fmt-src/include) # fmt library
-include_directories(${CMAKE_BINARY_DIR}/_deps/utf8proc-src)    # utf8 library.
 
 # define sources/headers:
 set (SOURCES src/repl.cpp src/environment.cpp src/parser.cpp src/value.cpp src/eval.cpp src/builtin.cpp)
@@ -10,8 +9,7 @@ set (HEADERS    src/repl.h
                 src/environment.h
                 src/parser.h
                 src/value.h
-                src/unicode.h
-                src/types.h
+        src/types.h
                 src/eval.h,
                 src/builtin.h)
 

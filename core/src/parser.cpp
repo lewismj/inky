@@ -1,12 +1,10 @@
 #include <cmath>
 #include <iterator>
-#include <memory>
 #include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
 
-#include "unicode.h"
 #include "value.h"
 #include "parser.h"
 
