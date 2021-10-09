@@ -31,6 +31,9 @@ namespace inky {
                     return maybe.left_value();
                 }
             }
+
+            // TODO - n.b. once a sub-expression is evaluated the results needs to replace the cell(s) it
+            // TODO - occupied.
             return error { "not yet implemented."};
         }
 
