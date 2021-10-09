@@ -61,6 +61,9 @@ namespace inky {
         std::variant<long, double, std::string, function> var;
 
         std::vector<value_ptr> cells;       /* s-expression values. */
-        std::shared_ptr<environment> env; /* lambda environment. */
+        std::shared_ptr<environment> env;  /* lambda environment. */
     };
+
+    /** Write value_ptr to output stream. */
+    std::ostream& operator<<(std::ostream& os, value_ptr value);
 }

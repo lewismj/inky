@@ -4,6 +4,7 @@
 
 #include "value.h"
 #include "environment.h"
+#include "builtin.h"
 #include "parser.h"
 #include "eval.h"
 #include "repl.h"
@@ -61,10 +62,10 @@ namespace inky {
             repl_context ctx;
             ctx.flags = 0;
 
-            /* TODO: Add builtin functions into the environment. */
+            /* Put builtin functions into the environment & load Lisp prelude. */
+            inky::builtin::add_builtin_functions(env);
 
             /* TODO: Load prelude. */
-
 
             while (true) {
                 fmt::print("λ> ");

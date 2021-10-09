@@ -5,6 +5,7 @@
 
 namespace inky::builtin {
 
-    void add_builtin_functions(environment_ptr e) {};
+    /* Used on start-up, to push builtin functions into the root environment. */
+    void add_builtin_functions(environment_ptr e) ;
 
 }
