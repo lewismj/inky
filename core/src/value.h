@@ -64,6 +64,6 @@ namespace inky {
         std::shared_ptr<environment> env;  /* lambda environment. */
     };
 
-    /** Write value_ptr to output stream. */
     std::ostream& operator<<(std::ostream& os, value_ptr value);
+    std::ostream& operator<<(std::ostream& os, value::type kind);
 }

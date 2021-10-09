@@ -66,6 +66,10 @@ namespace inky {
         return a.var != b.var;
     }
 
+    template<typename L,typename R> std::ostream& operator<<(std::ostream& os, either<L,R>& result) {
+        result ? os << result.right_value() : os << result.left_value();
+        return os;
+    }
 
     struct location { /* Location in string_view of the error. */
         size_t begin;

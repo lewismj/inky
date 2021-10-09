@@ -15,7 +15,25 @@ namespace inky {
 
 
         either<error,value_ptr> eval_sexpression(value_ptr v) {
+            if ( v->cells.empty() ) return v;
 
+            /* First evaluate all the sub-expressions. */
+            for (auto & cell : v->cells) {
+                auto maybe = eval(cell);
+                if ( maybe ) cell = maybe.right_value();
+                else return maybe.left_value();
+            }
+
+            /* First cell should be a function type (builtin or defined). */
+            if ( v->cells[0]->is_function() ) {
+                if ( v->cells[0]->kind == value::type::BuiltinFunction ) {
+
+                } else {
+                    return { "not yet implemented."};
+                }
+
+            } else
+                return error { fmt::format("eval error, s-expression function type expected, actual: {}",v->cells[0]->kind) };
         }
 
         either<error,value_ptr> eval(value_ptr v) {

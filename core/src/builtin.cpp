@@ -14,11 +14,12 @@ namespace inky::builtin {
     */
 
 
-
     /*
      * If we are computing (+,-,/,*) we reduce the cells of 'v' to the accumulated value
      * (i.e. these functions are not for unary '-' etc.
-     * Need to check type and perform floating point calc. if needed.
+     * Need to check type and perform floating point calc. if needed).
+     *
+     * No type-classes/semi-group ...
      */
     using integer_op = std::function<long(const long&, const long&)>;
     using double_op  = std::function<long(const double& d, const double&)>;
@@ -117,8 +118,8 @@ namespace inky::builtin {
     void add_builtin_functions(environment_ptr e) {
         /* basic numerics. */
         e->insert("+",value_ptr(new value(builtin_add)));
-        e->insert("-", value_ptr(new value(builtin_subtract)));
-        e->insert("*", value_ptr(new value(builtin_multiply)));
+        e->insert("-",value_ptr(new value(builtin_subtract)));
+        e->insert("*",value_ptr(new value(builtin_multiply)));
         e->insert("/",value_ptr(new value(builtin_divide)));
 
         /* basic list. */

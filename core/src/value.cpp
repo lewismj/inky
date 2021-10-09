@@ -39,4 +39,38 @@ namespace inky {
         return os;
     }
 
+    std::ostream& operator<<(std::ostream& os, value::type kind) {
+        switch (kind) {
+            case value::type::String:
+                os << "<string>";
+            case value::type::Integer:
+                os << "<integer>";
+                break;
+            case value::type::Double:
+                os << "<double>";
+                break;
+            case value::type::Symbol:
+                os << "<symbol>";
+                break;
+            case value::type::BuiltinFunction:
+                os << "<builtin>";
+                break;
+            case value::type::Function:
+                os << "<function>";
+                break;
+            case value::type::Lambda:
+                os << "<lambda>";
+                break;
+            case value::type::SExpression:
+                os << "<sexpression>";
+                break;
+            case value::type::QExpression:
+                os << "<qexpression>";
+                break;
+        }
+        os << "\n";
+
+        return os;
+    }
+
 };

@@ -21,6 +21,10 @@ namespace inky {
      *
      *   Next step; either convert to Flex/Bison? (can handle 'any' CFG, does -not- have to be LR(1).
      *            ; find simpler (or at least smaller!) parser combinator than boost spirit.
+     *
+     *   Or, since the 'programs' are very small, just have two steps 'generate lexemes' and 'parse tokens'.
+     *   the 'parse tokens' becomes more readable (See header file) at the cost of reading all the input in
+     *   one go, rather that via the iterator...
      */
 
     /* Implements simple recursive descent parser (&lexer). */

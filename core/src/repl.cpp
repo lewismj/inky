@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <fmt/core.h>
 #include <fmt/color.h>
 
 #include "value.h"
@@ -15,10 +16,7 @@ namespace inky {
     class repl_impl {
     public:
 
-        explicit repl_impl(repl_context context) : ctx(context), env(new environment()) {
-           // bootstrap the environment.
-        }
-
+        explicit repl_impl(repl_context context) : ctx(context), env(new environment()) {}
         ~repl_impl() = default;
 
 
@@ -26,12 +24,9 @@ namespace inky {
             auto v = inky::parse(input);
             if ( v.is_right() ) {
                 auto e = eval(env,v.right_value());
-                if ( e.is_right() ) {
-                    /* Output result of expression. */
-                } else {
-                    /* Display eval error. */
-
-                }
+                auto clr = e ? fg(fmt::terminal_color::green) | (fmt::emphasis::bold)
+                        : fg(fmt::terminal_color::red) | (fmt::emphasis::bold);
+                fmt::print(clr,"{}",e);
             } else {
                 error e = v.left_value();
                 fmt::print( fg(fmt::terminal_color::green) | (fmt::emphasis::italic), "{}\n",e.message);
