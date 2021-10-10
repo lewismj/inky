@@ -17,7 +17,7 @@ namespace inky {
         either<error,value_ptr> eval_fn(value_ptr f, value_ptr a) {
             if ( f->kind == value::type::BuiltinFunction ) {
                 auto fn = std::get<function>(f->var);
-                return fn(a);
+                return fn(env,a);
             } else {
                 return error { "eval error, not yet implemented."};
             }
@@ -59,7 +59,7 @@ namespace inky {
                     return eval_sexpression(v);
                     break;
 
-                /* Otherwise return value. */
+                /* Otherwise, return value. */
                 case value::type::Integer:
                 case value::type::Double:
                 case value::type::String:

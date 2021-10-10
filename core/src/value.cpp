@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <iterator>
 #include "value.h"
 
@@ -13,9 +12,22 @@ namespace inky {
         std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
     }
 
+    /* Utility, useful for debugging etc. */
+    std::ostream& to_expression_str(std::ostream& os, const value_ptr& v) {
+        os << "(";
+        for (const auto& cell: v->cells) {
+            if (&cell != &v->cells[0]) os << " ";
+            os << cell;
+        }
+        os << ")";
+        return os;
+    }
+
     std::ostream& operator<<(std::ostream& os, const value_ptr value) {
         switch (value->kind) {
             case value::type::String:
+                os << "\"" << std::get<std::string>(value->var) << "\"";
+                break;
             case value::type::Symbol:
                 os << std::get<std::string>(value->var);
                 break;
@@ -26,14 +38,14 @@ namespace inky {
                 os << std::get<double>(value->var);
                 break;
             case value::type::BuiltinFunction:
-                os << "<builtin function>";
+                os << "<builtin>";
                 break;
             case value::type::Function:
-                os << "<function>";
+                os << "<function>"; /* to-do, for functions, lambda etc. output formals/body. */
             case value::type::SExpression:
-                os << "<s-expr, not evaluated>";
+                return to_expression_str(os,value);
             case value::type::QExpression:
-                os << "<quoted s-expression> (todo , pretty print)";
+                return to_expression_str(os, value);
                 break;
         }
         return os;

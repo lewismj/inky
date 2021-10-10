@@ -46,8 +46,8 @@ namespace inky {
 
         ~value() = default;
 
-        void insert(value_ptr v); /* insert a value into this (cell). */
-        void move(value_ptr v); /* move cells of v into this & delete v. */
+        void insert(value_ptr v);               /* insert a value into this (cell). */
+        void move(value_ptr v);                 /* move cells of v into this & delete v. */
 
         [[nodiscard]] bool is_numeric() const { return kind == type::Double || kind == type::Integer; }
         [[nodiscard]] bool is_function() const  { return kind == type::Function || kind == type::BuiltinFunction; }

@@ -20,7 +20,6 @@ namespace inky {
         explicit repl_impl(repl_context context) : ctx(context), env(new environment()) {}
         ~repl_impl() = default;
 
-
         void parse_eval(std::string_view input) {
             auto v = inky::parse(input);
             if ( v.is_right() ) {
@@ -83,11 +82,9 @@ namespace inky {
     };
 
 
-
     void repl(repl_context& ctx) {
         repl_impl r(ctx);
         r.run();
     }
-
 
 }

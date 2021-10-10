@@ -9,9 +9,9 @@ set (HEADERS    src/repl.h
                 src/environment.h
                 src/parser.h
                 src/value.h
-        src/types.h
+                src/types.h
                 src/eval.h,
-                src/builtin.h)
+                src/builtin.h )
 
 # library definition:
 add_library(${PROJECT_NAME} ${SOURCES})

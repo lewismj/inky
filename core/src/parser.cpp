@@ -1,6 +1,5 @@
 #include <cmath>
 #include <iterator>
-#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -65,19 +64,25 @@ namespace inky {
                 ++i;
                 rtn = read_expr();
             }
-            else if ( *i == '\'') { /* q-expression, quoted expression?. */
+            /*
+            else if ( *i == '\'') {
                 ++i;
                 skip_whitespace();
-                if ( *i == '(') {
+                if ( *i == '(' ) {
                     ++i;
                     rtn = read_expr(true);
                 }
-                else { /* syntax error, expecting '(' */
+                else {
                     size_t position = std::distance(b,i-1);
                     return left(error {"parse error, expecting '(' after quote:",
                                        location { position, 2 }});
                 }
-            } /* ATOMS - string_literal | integer | double | ... | symbol */
+            }
+             */
+            else if (*i == '[')  { /* alternative syntax for quoted expressions/lambdas/functions...*/
+                ++i;
+                rtn = read_expr(true,']');
+            }
             else if ( *i == '\"')  {
                 rtn = read_string_literal();
             } /* +-[0-9] is number; + n ; symbol number.; number is int if atoi = atof; i.e. modf = 0.0 */
@@ -149,6 +154,7 @@ namespace inky {
                ++i;
             }
             i++;
+
             return value_ptr(new value(os.str()));
         }
 

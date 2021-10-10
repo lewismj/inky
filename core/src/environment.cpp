@@ -22,4 +22,12 @@ namespace inky {
         expressions[name] = v;
     }
 
+    void environment::insert_outer(const std::string& name, value_ptr v) {
+        auto i = outer;
+        if ( i == nullptr) insert(name,v);
+
+        while ( i != nullptr ) { i = i->outer; }
+        i->insert(name,v);
+    }
+
 }

@@ -20,7 +20,11 @@ namespace inky {
         value_ptr lookup(const std::string &name);
 
         /* insert a value for a given name. */
-        void insert(const std::string &name, value_ptr value);
+        void insert(const std::string& name, value_ptr value);
+
+        /* insert a value for a given name in the outermost environment scope,
+         * that this environment has access to. */
+        void insert_outer(const std::string& name, value_ptr value);
 
     private:
         /* hash map of values in the environment; the environment manages the ownership of values. */

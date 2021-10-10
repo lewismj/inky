@@ -33,7 +33,7 @@ namespace inky::builtin {
     struct numeric_cmp { integer_cmp f; double_cmp g; };
 
     /* here we're adding two s-expressions, no need to lookup anything from outer scope */
-    either<error, value_ptr> builtin_op(value_ptr v, numeric_operators nop) {
+    either<error, value_ptr> builtin_op(environment_ptr /* ignore. */, value_ptr v, numeric_operators nop) {
         /*
          * 1. check that we have cells to reduce.
          * 2. runtime type check:
@@ -101,7 +101,7 @@ namespace inky::builtin {
      * Also need the type check; restrictive at the moment to numeric only
      * fields.
      */
-    either<error,value_ptr> builtin_cmp(value_ptr v, numeric_cmp cmp) {
+    either<error,value_ptr> builtin_cmp(environment_ptr /*ignore */, value_ptr v, numeric_cmp cmp) {
         if (v->cells.empty()) { /* check for unary minus? */
             return error{"runtime error, no cells to reduce"};
         }
@@ -113,9 +113,6 @@ namespace inky::builtin {
         }
 
         std::variant<long, double> result;
-
-        /* make sure variant has correct type. */
-        //accumulator = is_double ? static_cast<double>(0.0) : static_cast<long>(0);
 
         value_ptr cell = v->cells[0];
         if ( is_double ) {
@@ -170,13 +167,15 @@ namespace inky::builtin {
     template<typename T> bool lt(const T& a, const T& b) { return a<b; }
     template<typename T> bool gt(const T& a, const T& b) { return a>b; }
 
+    /* List functions for dealing with quoted expressions. */
+
 
     void add_builtin_functions(environment_ptr e) {
         /* basic numerics. */
-        auto builtin_add = [](value_ptr v){ return builtin_op(v, { add<long>, add<double> }); };
-        auto builtin_subtract = [](value_ptr v){ return builtin_op(v, { subtract<long>, subtract<double> }); };
-        auto builtin_divide = [](value_ptr v){ return builtin_op(v, { divide<long>, divide<double> }); };
-        auto builtin_multiply = [](value_ptr v){ return builtin_op(v, { multiply<long>, multiply<double> }); };
+        auto builtin_add = [](environment_ptr e, value_ptr v){ return builtin_op(e,v, { add<long>, add<double> }); };
+        auto builtin_subtract = [](environment_ptr e,value_ptr v){ return builtin_op(e,v, { subtract<long>, subtract<double> }); };
+        auto builtin_divide = [](environment_ptr e,value_ptr v){ return builtin_op(e,v, { divide<long>, divide<double> }); };
+        auto builtin_multiply = [](environment_ptr e, value_ptr v){ return builtin_op(e,v, { multiply<long>, multiply<double> }); };
 
         e->insert("+", value_ptr(new value(builtin_add,true)));
         e->insert("-",value_ptr(new value(builtin_subtract, true)));
@@ -184,13 +183,10 @@ namespace inky::builtin {
         e->insert("/",value_ptr(new value(builtin_divide, true)));
 
         /* min/max; for numerical values. */
-        auto builtin_min = [](value_ptr v){ return builtin_cmp(v, { lt<long>, lt<double> }); };
-        auto builtin_max = [](value_ptr v){ return builtin_cmp(v, { gt<long>, gt<double> }); };
+        auto builtin_min = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { lt<long>, lt<double> }); };
+        auto builtin_max = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { gt<long>, gt<double> }); };
         e->insert("min",value_ptr(new value(builtin_min, true)));
         e->insert("max",value_ptr(new value(builtin_max, true)));
-
-        /* basic list. */
-
     }
 
 }
