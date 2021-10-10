@@ -169,6 +169,13 @@ namespace inky::builtin {
 
     /* List functions for dealing with quoted expressions. */
 
+    /*
+     * list,
+     * head,
+     * tail,
+     * eval,
+     * join,
+     */
 
     void add_builtin_functions(environment_ptr e) {
         /* basic numerics. */

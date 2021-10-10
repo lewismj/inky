@@ -31,7 +31,7 @@ namespace inky {
     /* Implements simple recursive descent parser (&lexer). */
     class parser {
     public:
-        explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()) {}
+        explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()), in_lambda(false) {}
         ~parser() = default;
 
         either<error,value_ptr> parse() { return read_expr(false,'\0'); }
@@ -62,15 +62,16 @@ namespace inky {
             }
             if ( *i == '(') { /* s-expression. */
                 ++i;
-                rtn = read_expr();
+                bool is_quoted = in_lambda ? true : false;
+                rtn = read_expr(is_quoted,')');
             }
-            /*
             else if ( *i == '\'') {
                 ++i;
                 skip_whitespace();
                 if ( *i == '(' ) {
                     ++i;
-                    rtn = read_expr(true);
+                    /* if previous was [] then this () will be a qexpression. */
+                    rtn = read_expr(true,')');
                 }
                 else {
                     size_t position = std::distance(b,i-1);
@@ -78,7 +79,6 @@ namespace inky {
                                        location { position, 2 }});
                 }
             }
-             */
             else if (*i == '[')  { /* alternative syntax for quoted expressions/lambdas/functions...*/
                 ++i;
                 rtn = read_expr(true,']');
@@ -97,8 +97,8 @@ namespace inky {
                 double val = 0.0;
                 double power = 0.0;
 
-                /* Only read valid number; i.e 2a is considered two tokens 2 and 'a';
-                 * can't have identifier 2a etc.. */
+                /* Only read valid number; i.e. 2a is considered two tokens 2 and 'a';
+                 * can't have identifier 2a etc. */
                 for (val = 0.0; std::isdigit(*i);i++) val = 10.0 * val + ( *i - '0');
                 if (*i == '.') i++;
                 for (power = 1.0; std::isdigit(*i);i++) {
@@ -129,8 +129,7 @@ namespace inky {
             return rtn;
         }
 
-
-        either<error,value_ptr> read_expr(bool is_quoted = false, char end_ch =')') { /* read an s-expression or quoted s-expression. */
+        either<error,value_ptr> read_expr(bool is_quoted, char end_ch) { /* read an s-expression or quoted s-expression. */
             value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
             while (*i != end_ch) { /* keep reading values ... */
                 auto j = read_value();
@@ -141,6 +140,7 @@ namespace inky {
                     return j.left_value();
                 }
             }
+            in_lambda = end_ch == ']' ? true : false;
             ++i;
             return value_ptr(val);
         }
@@ -151,9 +151,8 @@ namespace inky {
                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                 "0123456789_+-*\\/=<>!&", *i) && *i != '\0') {
                os << *i;
-               ++i;
+               i++;
             }
-            i++;
 
             return value_ptr(new value(os.str()));
         }
@@ -180,6 +179,13 @@ namespace inky {
         std::string_view::const_iterator b;  /* the beginning of the input. */
         std::string_view::const_iterator i;  /* current position in the input view. */
         std::string_view::const_iterator e;  /* the end of the input view. */
+
+        /*
+         * flag to indicate if we have read function or lambda
+         * arguments via [ args ], if so, the body is expected next,
+         * so treat the s-expression as quoted.
+         */
+        bool in_lambda;
     };
 
 

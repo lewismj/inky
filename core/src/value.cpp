@@ -14,12 +14,14 @@ namespace inky {
 
     /* Utility, useful for debugging etc. */
     std::ostream& to_expression_str(std::ostream& os, const value_ptr& v) {
-        os << "(";
+        if (v->kind == value::type::QExpression) os << "[";
+        else os << "(";
         for (const auto& cell: v->cells) {
             if (&cell != &v->cells[0]) os << " ";
             os << cell;
         }
-        os << ")";
+        if (v->kind == value::type::QExpression) os << "]";
+        else os << ")";
         return os;
     }
 
