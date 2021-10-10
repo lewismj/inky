@@ -66,7 +66,7 @@ namespace inky {
                 rtn = read_expr();
             }
             else if ( *i == '\'') { /* q-expression, quoted expression?. */
-                //++i;
+                ++i;
                 skip_whitespace();
                 if ( *i == '(') {
                     ++i;

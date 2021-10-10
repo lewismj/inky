@@ -23,12 +23,17 @@ namespace inky::builtin {
      */
 
     using integer_op = std::function<long(const long&, const long&)>;
-    using double_op  = std::function<double(const double& d, const double&)>;
+    using double_op  = std::function<double(const double&, const double&)>;
 
     struct numeric_operators { integer_op  f; double_op   g; };
 
+    using integer_cmp = std::function<bool(const long&, const long&)>;
+    using double_cmp = std::function<bool(const double&, const double&)>;
 
-    either<error, value_ptr> builtin_op(environment_ptr ignore, value_ptr v, numeric_operators nop) {
+    struct numeric_cmp { integer_cmp f; double_cmp g; };
+
+    /* here we're adding two s-expressions, no need to lookup anything from outer scope */
+    either<error, value_ptr> builtin_op(value_ptr v, numeric_operators nop) {
         /*
          * 1. check that we have cells to reduce.
          * 2. runtime type check:
@@ -43,6 +48,7 @@ namespace inky::builtin {
         if (v->cells.empty()) { /* check for unary minus? */
             return error{"runtime error, no cells to reduce"};
         }
+
         bool is_double = false;
         for (const auto &c : v->cells) {
             if (!c->is_numeric()) return error{"runtime_error, +,-,/,* reduce non numeric."};
@@ -60,7 +66,6 @@ namespace inky::builtin {
             double cell_val =
                     cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
                                                        : std::get<double>(cell->var);
-
             accumulator =  cell_val;
         } else {
             accumulator = std::get<long>(cell->var);
@@ -71,7 +76,6 @@ namespace inky::builtin {
 
             try {
                 if (is_double) {
-                    /* either value_ptr is double or int, cast to double if int; accumulate double. */
                     double cell_val =
                             c->kind == value::type::Integer ? (double) std::get<long>(c->var) : std::get<double>(c->var);
                     accumulator = (double) nop.g(std::get<double>(accumulator), cell_val);
@@ -83,46 +87,107 @@ namespace inky::builtin {
             }
         }
 
-        /* erase v->cells ??? */
-        v->cells.resize(0);
+        v->cells.resize(0); /* erase the cells, they've been evaluated. */
 
         if (is_double) return value_ptr(new value(std::get<double>(accumulator)));
         return value_ptr(new value(std::get<long>(accumulator)));
     }
+
+
+    /*
+     * min/max; we don't use *minelement, or *maxelement from std:: here;
+     * (we could ignore non-numeric fields in cells); want to preserve
+     * if possible the types and cast where necessary (long to double).
+     * Also need the type check; restrictive at the moment to numeric only
+     * fields.
+     */
+    either<error,value_ptr> builtin_cmp(value_ptr v, numeric_cmp cmp) {
+        if (v->cells.empty()) { /* check for unary minus? */
+            return error{"runtime error, no cells to reduce"};
+        }
+
+        bool is_double = false;
+        for (const auto &c : v->cells) {
+            if (!c->is_numeric()) return error{"runtime_error, +,-,/,* reduce non numeric."};
+            if (c->kind == value::type::Double) is_double = true;
+        }
+
+        std::variant<long, double> result;
+
+        /* make sure variant has correct type. */
+        //accumulator = is_double ? static_cast<double>(0.0) : static_cast<long>(0);
+
+        value_ptr cell = v->cells[0];
+        if ( is_double ) {
+            double cell_val =
+                    cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
+                                                       : std::get<double>(cell->var);
+
+            result =  cell_val;
+        } else {
+            result = std::get<long>(cell->var);
+        }
+
+        for (int i = 1; i < v->cells.size(); i++) {
+            value_ptr c= v->cells[i];
+
+            try {
+                if (is_double) {
+                    double cell_val =
+                            c->kind == value::type::Integer ? (double) std::get<long>(c->var) : std::get<double>(c->var);
+                    if (cmp.g(cell_val,std::get<double>(result))) result = cell_val;
+                } else {
+                    long cell_val = std::get<long>(c->var);
+                    if (cmp.f(cell_val,std::get<long>(result))) result = cell_val;
+                }
+            } catch ( const std::runtime_error& e) {
+                return error { fmt::format("eval error, caught exception: {}", e.what())};
+            }
+        }
+
+        v->cells.resize(0); /* erase the cells, they've been evaluated. */
+
+        if (is_double) return value_ptr(new value(std::get<double>(result)));
+        return value_ptr(new value(std::get<long>(result)));
+    }
+
+
+    /* The purpose of the builtin is to provide very basic functions, the 'prelude' should
+     * be used to boostrap and provide a 'standard library'. A standard lib. should not be
+     * implemented as builtin functions.
+     */
+
 
     template<typename T> T add(const T& a, const T& b) { return a+b; }
     template<typename T> T subtract(const T& a, const T& b) { return a-b; }
     template<typename T> T multiply(const T& a, const T& b) { return a*b; }
     template<typename T> T divide(const T& a, const T& b) {
         if ( b == 0 ) {
-           throw std::runtime_error("eval error, divide by zero.");
+            throw std::runtime_error("eval error, divide by zero.");
         }
         return a/b;
     }
-
-    either<error, value_ptr> builtin_add(environment_ptr e, value_ptr v) {
-        return builtin_op(e,v, { add<long>, add<double> });
-    }
-
-    either<error, value_ptr> builtin_subtract(environment_ptr e, value_ptr v) {
-        return builtin_op(e,v, { subtract<long>, subtract<double> });
-    }
-
-    either<error, value_ptr> builtin_divide(environment_ptr e, value_ptr v) {
-        return builtin_op(e,v,{ divide<long>, divide<double> });
-    }
-
-    either<error, value_ptr> builtin_multiply(environment_ptr e, value_ptr v) {
-        return builtin_op(e,v,{multiply<long>,multiply<double>});
-    }
+    template<typename T> bool lt(const T& a, const T& b) { return a<b; }
+    template<typename T> bool gt(const T& a, const T& b) { return a>b; }
 
 
     void add_builtin_functions(environment_ptr e) {
         /* basic numerics. */
-        e->insert("+",value_ptr(new value(builtin_add, true)));
+        auto builtin_add = [](value_ptr v){ return builtin_op(v, { add<long>, add<double> }); };
+        auto builtin_subtract = [](value_ptr v){ return builtin_op(v, { subtract<long>, subtract<double> }); };
+        auto builtin_divide = [](value_ptr v){ return builtin_op(v, { divide<long>, divide<double> }); };
+        auto builtin_multiply = [](value_ptr v){ return builtin_op(v, { multiply<long>, multiply<double> }); };
+
+        e->insert("+", value_ptr(new value(builtin_add,true)));
         e->insert("-",value_ptr(new value(builtin_subtract, true)));
         e->insert("*",value_ptr(new value(builtin_multiply, true)));
         e->insert("/",value_ptr(new value(builtin_divide, true)));
+
+        /* min/max; for numerical values. */
+        auto builtin_min = [](value_ptr v){ return builtin_cmp(v, { lt<long>, lt<double> }); };
+        auto builtin_max = [](value_ptr v){ return builtin_cmp(v, { gt<long>, gt<double> }); };
+        e->insert("min",value_ptr(new value(builtin_min, true)));
+        e->insert("max",value_ptr(new value(builtin_max, true)));
 
         /* basic list. */
 

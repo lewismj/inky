@@ -29,9 +29,11 @@ namespace inky {
                 os << "<builtin function>";
                 break;
             case value::type::Function:
+                os << "<function>";
             case value::type::SExpression:
+                os << "<s-expr, not evaluated>";
             case value::type::QExpression:
-                os << "<unevaluated expression>";
+                os << "<quoted s-expression> (todo , pretty print)";
                 break;
         }
         return os;
