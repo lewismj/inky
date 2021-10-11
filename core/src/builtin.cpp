@@ -258,6 +258,9 @@ namespace inky::builtin {
         e->insert("eval",value_ptr(new value(builtin_eval, true)));
         e->insert("join",value_ptr(new value(builtin_join, true)));
 
+        /* def and = */
+
+
     }
 
 }

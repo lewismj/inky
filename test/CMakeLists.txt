@@ -1,6 +1,7 @@
 project(inky-test)
 
 add_executable(${PROJECT_NAME}  src/test.cpp
+                                src/test_utils.cpp
                                 src/eval_tests.cpp
                                 src/list_builtin_tests.cpp)
 
