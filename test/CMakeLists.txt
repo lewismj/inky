@@ -1,7 +1,8 @@
 project(inky-test)
 
 add_executable(${PROJECT_NAME}  src/test.cpp
-        src/eval_tests.cpp)
+                                src/eval_tests.cpp
+                                src/list_builtin_tests.cpp)
 
 include_directories(${CMAKE_BINARY_DIR}/_deps/catch2-src/single_include)
 

@@ -171,25 +171,56 @@ namespace inky::builtin {
     /* functions for dealing with lambda expressions/lists;
      * list, head, tail, eval, join. */
 
+
+    /* n.b. in these operators we return errors on head or tail of empty lists etc,
+     * they're used for argument calling; list types can be fully implemented in a prelude,
+     * which may offer different semantics. */
+
+
     either<error,value_ptr> builtin_list(environment_ptr e, value_ptr a) {
+        if (a->cells.size() != 1) {
+            std::string str = fmt::format("eval error, list operator expects 1 argument, actual:{}",a->cells.size());
+            return error { str };
+        }
+        else if ( a->cells[0]->cells.empty() ) {
+            return error { "eval error, list operator received empty list." };
+        }
         a->kind = value::type::QExpression;
         return a;
     }
 
     either<error,value_ptr> builtin_head(environment_ptr e, value_ptr a) {
-        /* runtime check. */
-        a->cells.erase(a->cells.begin()+1,a->cells.end());
-        return a;
+        if (a->cells.size() != 1) {
+            std::string str = fmt::format("eval error, head operator expects 1 argument, actual:{}",a->cells.size());
+            return error { str };
+        }
+        else if ( a->cells[0]->cells.empty() ) {
+            return error { "eval error, head operator received empty list." };
+        }
+        value_ptr v = a->cells[0]->cells[0];
+        a->cells.erase(a->cells.begin(),a->cells.end());
+        return v;
     }
 
     either<error,value_ptr> builtin_tail(environment_ptr e, value_ptr a) {
-        /* runtime check. */
-        a->cells.pop_front();
-        return a;
+        if (a->cells.size() != 1) {
+            std::string str = fmt::format("eval error, tail operator expects 1 argument, actual:{}",a->cells.size());
+            return error { str };
+        }
+        else if ( a->cells[0]->cells.empty() ) {
+            return error { "eval error, tail operator received empty list." };
+        }
+
+        value_ptr v = a->cells[0];
+        a->cells.erase(a->cells.begin(),a->cells.end());
+        v->cells.pop_front();
+        return v;
     }
 
     either<error,value_ptr> builtin_join(environment_ptr e, value_ptr a) {
-        /* runtime check. */
+        for (const auto& cell: a->cells) {
+            if (a->kind != value::type::QExpression ) return error { "eval error, join operator on non quoted expression. "};
+        }
         value_ptr v = a->cells[0];
         a->cells.pop_front();
         v->move(a);
@@ -197,7 +228,14 @@ namespace inky::builtin {
     }
 
     either<error,value_ptr> builtin_eval(environment_ptr e, value_ptr a) {
-        /* runtime check. */
+        if (a->cells.size() != 1) {
+            std::string str = fmt::format("eval error, eval operator expects 1 argument, actual:{}",a->cells.size());
+            return error { str };
+        }
+        else if ( a->cells[0]->kind != value::type::QExpression ) {
+            return error {"eval error, argument not quoted expression." };
+        }
+
         a->cells[0]->kind = value::type::SExpression;
         return inky::eval(e,a);
     }
