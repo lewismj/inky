@@ -178,13 +178,6 @@ namespace inky::builtin {
 
 
     either<error,value_ptr> builtin_list(environment_ptr e, value_ptr a) {
-        if (a->cells.size() != 1) {
-            std::string str = fmt::format("eval error, list operator expects 1 argument, actual:{}",a->cells.size());
-            return error { str };
-        }
-        else if ( a->cells[0]->cells.empty() ) {
-            return error { "eval error, list operator received empty list." };
-        }
         a->kind = value::type::QExpression;
         return a;
     }
