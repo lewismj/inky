@@ -3,7 +3,7 @@
 #include "value.h"
 #include "environment.h"
 #include "eval.h"
-
+#include "builtin.h"
 
 namespace inky {
 
@@ -13,12 +13,15 @@ namespace inky {
         explicit eval_impl(environment_ptr e): env(e) {}
         ~eval_impl() = default;
 
-
         either<error,value_ptr> eval_fn(value_ptr f, value_ptr a) {
+
             if ( f->kind == value::type::BuiltinFunction ) {
                 auto fn = std::get<builtin_function>(f->var);
                 return fn(env,a);
             } else {
+
+
+
                 return error { "Not yet implemented."};
             }
         }
@@ -72,7 +75,6 @@ namespace inky {
     private:
         environment_ptr env;
     };
-
 
     either<error,value_ptr> eval(environment_ptr e, value_ptr v) {
         eval_impl i(e);
