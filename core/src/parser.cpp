@@ -63,6 +63,8 @@ namespace inky {
             if ( *i == '(') { /* s-expression. */
                 ++i;
                 bool is_quoted = in_lambda ? true : false;
+                // TODO - we may not need to do this here; at eval time, we know that we have [ argument list]
+                // TODO - with a lambda, so the first step could be to assign the body to a q-expression.
                 rtn = read_expr(is_quoted,')');
             }
             else if ( *i == '\'') {

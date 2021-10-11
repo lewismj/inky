@@ -4,7 +4,7 @@
 #include "types.h"
 #include "value.h"
 #include "builtin.h"
-
+#include "eval.h"
 
 namespace inky::builtin {
 
@@ -167,15 +167,40 @@ namespace inky::builtin {
     template<typename T> bool lt(const T& a, const T& b) { return a<b; }
     template<typename T> bool gt(const T& a, const T& b) { return a>b; }
 
-    /* List functions for dealing with quoted expressions. */
 
-    /*
-     * list,
-     * head,
-     * tail,
-     * eval,
-     * join,
-     */
+    /* functions for dealing with lambda expressions/lists;
+     * list, head, tail, eval, join. */
+
+    either<error,value_ptr> builtin_list(environment_ptr e, value_ptr a) {
+        a->kind = value::type::QExpression;
+        return a;
+    }
+
+    either<error,value_ptr> builtin_head(environment_ptr e, value_ptr a) {
+        /* runtime check. */
+        a->cells.erase(a->cells.begin()+1,a->cells.end());
+        return a;
+    }
+
+    either<error,value_ptr> builtin_tail(environment_ptr e, value_ptr a) {
+        /* runtime check. */
+        a->cells.pop_front();
+        return a;
+    }
+
+    either<error,value_ptr> builtin_join(environment_ptr e, value_ptr a) {
+        /* runtime check. */
+        value_ptr v = a->cells[0];
+        a->cells.pop_front();
+        v->move(a);
+        return v;
+    }
+
+    either<error,value_ptr> builtin_eval(environment_ptr e, value_ptr a) {
+        /* runtime check. */
+        a->cells[0]->kind = value::type::SExpression;
+        return inky::eval(e,a);
+    }
 
     void add_builtin_functions(environment_ptr e) {
         /* basic numerics. */
@@ -194,6 +219,14 @@ namespace inky::builtin {
         auto builtin_max = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { gt<long>, gt<double> }); };
         e->insert("min",value_ptr(new value(builtin_min, true)));
         e->insert("max",value_ptr(new value(builtin_max, true)));
+
+        /* q-expression, lambda primitives. */
+        e->insert("list",value_ptr(new value(builtin_list, true)));
+        e->insert("head",value_ptr(new value(builtin_head, true)));
+        e->insert("tail",value_ptr(new value(builtin_tail, true)));
+        e->insert("eval",value_ptr(new value(builtin_eval, true)));
+        e->insert("join",value_ptr(new value(builtin_join, true)));
+
     }
 
 }
