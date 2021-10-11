@@ -23,11 +23,12 @@ namespace inky {
     }
 
     void environment::insert_outer(const std::string& name, value_ptr v) {
-        auto i = outer;
-        if ( i == nullptr) insert(name,v);
-
-        while ( i != nullptr ) { i = i->outer; }
-        i->insert(name,v);
+        if (outer == nullptr) insert(name,v);
+        else {
+           auto i = outer;
+           while (i != nullptr) { i = i->outer; }
+           i->insert(name, v);
+        }
     }
 
 }

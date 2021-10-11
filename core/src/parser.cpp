@@ -57,7 +57,7 @@ namespace inky {
 
             if ( i == e) {
                 size_t position = std::distance(b,i-1);
-                return error { "parse error, expecting token, reached end of input:",
+                return error { "Expecting token, reached end of input:",
                                location { position, 1} };
             }
             if ( *i == '(') { /* s-expression. */
@@ -77,7 +77,7 @@ namespace inky {
                 }
                 else {
                     size_t position = std::distance(b,i-1);
-                    return left(error {"parse error, expecting '(' after quote:",
+                    return left(error {"Expecting '(' after quote:",
                                        location { position, 2 }});
                 }
             }
@@ -123,7 +123,7 @@ namespace inky {
             }
             else {
                 size_t position = std::distance(b, i);
-                return error{"parse error, mismatched expression:", location{position, 1}};
+                return error{"Mismatched expression:", location{position, 1}};
             }
 
             skip_whitespace();
@@ -168,7 +168,7 @@ namespace inky {
                     size_t start = std::distance(b,s);
                     size_t distance = std::distance(b,i) - start;
                     location loc { start, distance };
-                    return error { "parse error, string literal not terminated:", loc };
+                    return error { "String literal not terminated:", loc };
                 }
                 os << *i;
                 ++i;

@@ -83,7 +83,7 @@ namespace inky::builtin {
                     accumulator = nop.f(std::get<long>(accumulator), std::get<long>(c->var));
                 }
             } catch ( const std::runtime_error& e) {
-                return error { fmt::format("eval error, caught exception: {}", e.what())};
+                return error { fmt::format("caught exception: {}", e.what())};
             }
         }
 
@@ -138,7 +138,7 @@ namespace inky::builtin {
                     if (cmp.f(cell_val,std::get<long>(result))) result = cell_val;
                 }
             } catch ( const std::runtime_error& e) {
-                return error { fmt::format("eval error, caught exception: {}", e.what())};
+                return error { fmt::format("caught exception: {}", e.what())};
             }
         }
 
@@ -160,7 +160,7 @@ namespace inky::builtin {
     template<typename T> T multiply(const T& a, const T& b) { return a*b; }
     template<typename T> T divide(const T& a, const T& b) {
         if ( b == 0 ) {
-            throw std::runtime_error("eval error, divide by zero.");
+            throw std::runtime_error("divide by zero.");
         }
         return a/b;
     }
@@ -177,31 +177,29 @@ namespace inky::builtin {
      * which may offer different semantics. */
 
 
-    either<error,value_ptr> builtin_list(environment_ptr e, value_ptr a) {
+    either<error,value_ptr> builtin_list(environment_ptr , value_ptr a) {
         a->kind = value::type::QExpression;
         return a;
     }
 
-    either<error,value_ptr> builtin_head(environment_ptr e, value_ptr a) {
+    either<error,value_ptr> builtin_head(environment_ptr , value_ptr a) {
         if (a->cells.size() != 1) {
-            std::string str = fmt::format("eval error, head operator expects 1 argument, actual:{}",a->cells.size());
+            std::string str = fmt::format("head operator expects 1 argument, actual:{}",a->cells.size());
             return error { str };
-        }
-        else if ( a->cells[0]->cells.empty() ) {
-            return error { "eval error, head operator received empty list." };
+        } else if ( a->cells[0]->cells.empty() ) {
+            return error { "head operator received empty list." };
         }
         value_ptr v = a->cells[0]->cells[0];
         a->cells.erase(a->cells.begin(),a->cells.end());
         return v;
     }
 
-    either<error,value_ptr> builtin_tail(environment_ptr e, value_ptr a) {
+    either<error,value_ptr> builtin_tail(environment_ptr , value_ptr a) {
         if (a->cells.size() != 1) {
-            std::string str = fmt::format("eval error, tail operator expects 1 argument, actual:{}",a->cells.size());
+            std::string str = fmt::format("tail operator expects 1 argument, actual:{}",a->cells.size());
             return error { str };
-        }
-        else if ( a->cells[0]->cells.empty() ) {
-            return error { "eval error, tail operator received empty list." };
+        } else if ( a->cells[0]->cells.empty() ) {
+            return error { "tail operator received empty list." };
         }
 
         value_ptr v = a->cells[0];
@@ -210,9 +208,9 @@ namespace inky::builtin {
         return v;
     }
 
-    either<error,value_ptr> builtin_join(environment_ptr e, value_ptr a) {
+    either<error,value_ptr> builtin_join(environment_ptr , value_ptr a) {
         for (const auto& cell: a->cells) {
-            if (a->kind != value::type::QExpression ) return error { "eval error, join operator on non quoted expression. "};
+            if (a->kind != value::type::QExpression ) return error { "join operator on non quoted expression. "};
         }
         value_ptr v = a->cells[0];
         a->cells.pop_front();
@@ -222,15 +220,42 @@ namespace inky::builtin {
 
     either<error,value_ptr> builtin_eval(environment_ptr e, value_ptr a) {
         if (a->cells.size() != 1) {
-            std::string str = fmt::format("eval error, eval operator expects 1 argument, actual:{}",a->cells.size());
+            std::string str = fmt::format("eval operator expects 1 argument, actual:{}",a->cells.size());
             return error { str };
-        }
-        else if ( a->cells[0]->kind != value::type::QExpression ) {
-            return error {"eval error, argument not quoted expression." };
+        } else if ( a->cells[0]->kind != value::type::QExpression ) {
+            return error {"argument not quoted expression." };
         }
 
         a->cells[0]->kind = value::type::SExpression;
         return inky::eval(e,a);
+    }
+
+    either<error,value_ptr> builtin_define(environment_ptr e, value_ptr a) {
+        if (a->cells.empty()) {
+           return error { "'defn' function missing arguments."} ;
+        }  else if ( a->cells[0]->kind != value::type::QExpression) {
+            return error { "'defn' expected [] argument list."};
+        }
+
+        value_ptr symbols = a->cells[0];
+        if ( symbols->cells.size() != a->cells.size() -1 ) {
+            std::string message
+                    = fmt::format("Unexpected number of arguments for symbols, received {}, expected {}. ",
+                                  symbols->cells.size(), a->cells.size() - 1);
+            return error { message };
+        }
+
+        for (size_t i=0; i<symbols->cells.size(); i++) {
+            auto key = symbols->cells[i];
+            if ( key->kind != value::type::Symbol ) {
+                return error { "'defn' argument list should contain symbols."};
+            }
+            auto val = a->cells[i+1];
+            e->insert_outer(std::get<std::string>(key->var),val);
+        }
+
+        /* value defined, return empty s-expression. */
+        return value_ptr(new value(value::type::SExpression));
     }
 
     void add_builtin_functions(environment_ptr e) {
@@ -258,8 +283,8 @@ namespace inky::builtin {
         e->insert("eval",value_ptr(new value(builtin_eval, true)));
         e->insert("join",value_ptr(new value(builtin_join, true)));
 
-        /* def and = */
-
+        /* define & = */
+        e->insert("defn",value_ptr(new value(builtin_define, true)));
 
     }
 

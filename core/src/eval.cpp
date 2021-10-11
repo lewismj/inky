@@ -19,7 +19,7 @@ namespace inky {
                 auto fn = std::get<function>(f->var);
                 return fn(env,a);
             } else {
-                return error { "eval error, not yet implemented."};
+                return error { "Not yet implemented."};
             }
 
         }
@@ -41,7 +41,7 @@ namespace inky {
                 v->cells.pop_front();
                 return eval_fn(fn,v);
             } else
-                return error { fmt::format("eval error, s-expression function type expected, actual: {}",v->cells[0]->kind) };
+                return error { fmt::format("S-expression function type expected, actual: {}",v->cells[0]->kind) };
         }
 
         either<error,value_ptr> eval(value_ptr v) {
@@ -51,7 +51,7 @@ namespace inky {
                     auto key = std::get<std::string>(v->var);
                     auto lookup = env->lookup(key);
                     if (lookup) return lookup;
-                    else return error{fmt::format("eval error, unbound symbol {}", key)};
+                    else return error{fmt::format("Unbound symbol {}", key)};
                 }
 
                 /* If v is an s-expression, evaluate sub-expressions then the expression itself.*/
