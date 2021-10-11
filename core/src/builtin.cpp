@@ -268,7 +268,25 @@ namespace inky::builtin {
     }
 
     either<error,value_ptr> builtin_lambda(environment_ptr e, value_ptr a) {
+        if ( a->cells.size() != 2) {
+            std::string message = fmt::format("lambda expects 2 arguments formals & body, received: {}",a->cells.size());
+            return error { message };
+        }
 
+        for (const auto& c: a->cells[0]->cells) {
+            if ( c->kind != value::type::Symbol ) {
+                return error { "lambda arguments must be symbols."};
+            }
+        }
+
+        environment_ptr env(new environment());
+
+        value_ptr formals = a->cells.front(); a->cells.pop_front();
+        value_ptr body = a->cells.front(); a->cells.pop_front();
+
+        value::lambda_ptr l (new value::lambda { formals, body, env} );
+
+        return value_ptr( new value (l));
     }
 
     void add_builtin_functions(environment_ptr e) {

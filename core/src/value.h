@@ -20,14 +20,14 @@ namespace inky {
 
         /* primitives, n.b. prelude should bootstrap proper types;  */
         enum class type {
-            Integer,
-            Double,
-            String,
-            Symbol,
-            BuiltinFunction,
-            Function,
-            SExpression,
-            QExpression /* quoted s-expression / lambda. */
+            Integer,            /* Integer primitive type.                              */
+            Double,             /* Double primitive type.                               */
+            String,             /* String primitive type.                               */
+            Symbol,             /* Symbol, e.g. variable or function name, etc.         */
+            BuiltinFunction,    /* Builtin function.                                    */
+            Function,           /* Lambda function, can be named using builtin 'defn'   */
+            SExpression,        /* SExpression.                                         */
+            QExpression         /* Quoted SExpression.                                  */
         };
 
         explicit value(const long l) : kind(type::Integer) { var = l; }
