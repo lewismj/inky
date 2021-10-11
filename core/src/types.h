@@ -90,6 +90,6 @@ namespace inky {
     using environment_ptr = std::shared_ptr<environment>;
 
     /* function; * as: f: environment . value -> value. */
-    typedef std::function<either<error,std::shared_ptr<value>>(environment_ptr,value_ptr)> function;
+    typedef std::function<either<error,std::shared_ptr<value>>(environment_ptr,value_ptr)> builtin_function;
 
 }

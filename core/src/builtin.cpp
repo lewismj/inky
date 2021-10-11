@@ -230,13 +230,13 @@ namespace inky::builtin {
         return inky::eval(e,a);
     }
 
-    either<error,value_ptr> builtin_define(environment_ptr e, value_ptr a) {
+
+    either<error,value_ptr> builtin_define(environment_ptr e, value_ptr a, bool outer_scope) {
         if (a->cells.empty()) {
            return error { "'defn' function missing arguments."} ;
         }  else if ( a->cells[0]->kind != value::type::QExpression) {
-            return error { "'defn' expected [] argument list."};
+               return error{"'defn' expected [] argument list."};
         }
-
         value_ptr symbols = a->cells[0];
         if ( symbols->cells.size() != a->cells.size() -1 ) {
             std::string message
@@ -251,11 +251,24 @@ namespace inky::builtin {
                 return error { "'defn' argument list should contain symbols."};
             }
             auto val = a->cells[i+1];
-            e->insert_outer(std::get<std::string>(key->var),val);
+            if (outer_scope) e->insert_global(std::get<std::string>(key->var),val);
+            else e->insert(std::get<std::string>(key->var),val) ;
         }
 
         /* value defined, return empty s-expression. */
         return value_ptr(new value(value::type::SExpression));
+    }
+
+    either<error,value_ptr> builtin_defn(environment_ptr e, value_ptr a) {
+        return builtin_define(e,a, true);
+    }
+
+    either<error,value_ptr> builtin_put(environment_ptr e, value_ptr a) {
+        return builtin_define(e,a,false);
+    }
+
+    either<error,value_ptr> builtin_lambda(environment_ptr e, value_ptr a) {
+
     }
 
     void add_builtin_functions(environment_ptr e) {
@@ -265,27 +278,31 @@ namespace inky::builtin {
         auto builtin_divide = [](environment_ptr e,value_ptr v){ return builtin_op(e,v, { divide<long>, divide<double> }); };
         auto builtin_multiply = [](environment_ptr e, value_ptr v){ return builtin_op(e,v, { multiply<long>, multiply<double> }); };
 
-        e->insert("+", value_ptr(new value(builtin_add,true)));
-        e->insert("-",value_ptr(new value(builtin_subtract, true)));
-        e->insert("*",value_ptr(new value(builtin_multiply, true)));
-        e->insert("/",value_ptr(new value(builtin_divide, true)));
+        e->insert("+", value_ptr(new value(builtin_add)));
+        e->insert("-",value_ptr(new value(builtin_subtract)));
+        e->insert("*",value_ptr(new value(builtin_multiply)));
+        e->insert("/",value_ptr(new value(builtin_divide)));
 
         /* min/max; for numerical values. */
         auto builtin_min = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { lt<long>, lt<double> }); };
         auto builtin_max = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { gt<long>, gt<double> }); };
-        e->insert("min",value_ptr(new value(builtin_min, true)));
-        e->insert("max",value_ptr(new value(builtin_max, true)));
+        e->insert("min",value_ptr(new value(builtin_min)));
+        e->insert("max",value_ptr(new value(builtin_max)));
 
         /* q-expression, lambda primitives. */
-        e->insert("list",value_ptr(new value(builtin_list, true)));
-        e->insert("head",value_ptr(new value(builtin_head, true)));
-        e->insert("tail",value_ptr(new value(builtin_tail, true)));
-        e->insert("eval",value_ptr(new value(builtin_eval, true)));
-        e->insert("join",value_ptr(new value(builtin_join, true)));
+        e->insert("list",value_ptr(new value(builtin_list)));
+        e->insert("head",value_ptr(new value(builtin_head)));
+        e->insert("tail",value_ptr(new value(builtin_tail)));
+        e->insert("eval",value_ptr(new value(builtin_eval)));
+        e->insert("join",value_ptr(new value(builtin_join)));
 
-        /* define & = */
-        e->insert("defn",value_ptr(new value(builtin_define, true)));
+        /* defn , =  ; the former puts definition into global context, the later the local environment. */
+        e->insert("defn",value_ptr(new value(builtin_defn)));
+        e->insert("=",value_ptr(new value(builtin_put)));
 
+        /* lambda function. */
+        e->insert("lambda",value_ptr(new value(builtin_lambda)));
+        e->insert("\\",value_ptr(new value(builtin_lambda)));
     }
 
 }

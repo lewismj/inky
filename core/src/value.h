@@ -11,13 +11,13 @@
 namespace inky {
 
     /* Forward declarations. */
-    class value;
-
     class environment;
 
     /* A value (Lisp value in this context) is a dynamically-typed hierarchical data structure
      * that represents ast node for s-expression(s). */
     struct value {
+        struct lambda;
+
         /* primitives, n.b. prelude should bootstrap proper types;  */
         enum class type {
             Integer,
@@ -37,11 +37,8 @@ namespace inky {
             kind = literal ? type::String : type::Symbol;
             var = s;
         }
-        explicit value(const function &f) : kind(type::Function) { var = f; }
-        explicit value(const function& f, bool builtin) {
-            kind = builtin ? type::BuiltinFunction : type::Function;
-            var = f;
-        }
+        explicit value(const builtin_function &f) : kind(type::BuiltinFunction) { var = f; }
+        explicit value(std::shared_ptr<lambda>& l): kind(type::Function) { var = l;}
         explicit value(type t) { kind = t; }
 
         ~value() = default;
@@ -54,17 +51,17 @@ namespace inky {
 
         type kind; /* The type of the value, basic type. */
 
-        std::variant<long, double, std::string, function> var;  /* 'stack' values. */
-        std::deque<value_ptr> cells;                            /* s-expression values. */
-
-        struct lambda {
-            value_ptr formals;                  /* arguments, expr.              */
-            value_ptr body;                     /* definition of the function.   */
-            std::shared_ptr<environment> env;   /* environment of the lambda.    */
+        struct lambda { /* structure for defining functions. */
+           std::shared_ptr<value> formals;     /* arguments, expr.              */
+           std::shared_ptr<value> body;        /* definition of the function.   */
+           std::shared_ptr<environment> env;   /* environment of the lambda.    */
         };
-        std::optional<lambda> lambda_exp;       /* Lambda expression. */
+        typedef std::shared_ptr<lambda> lambda_ptr;
+
+        std::variant<long, double, std::string, builtin_function, lambda_ptr > var;
+        std::deque<value_ptr> cells;   /* s-expression values. */
     };
 
-    std::ostream& operator<<(std::ostream& os, const value_ptr value);
-    std::ostream& operator<<(std::ostream& os, const value::type kind);
+    std::ostream& operator<<(std::ostream& os, value_ptr value);
+    std::ostream& operator<<(std::ostream& os, value::type kind);
 }

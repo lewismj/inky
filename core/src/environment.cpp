@@ -22,7 +22,7 @@ namespace inky {
         expressions[name] = v;
     }
 
-    void environment::insert_outer(const std::string& name, value_ptr v) {
+    void environment::insert_global(const std::string& name, value_ptr v) {
         if (outer == nullptr) insert(name,v);
         else {
            auto i = outer;

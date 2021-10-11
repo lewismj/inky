@@ -16,12 +16,11 @@ namespace inky {
 
         either<error,value_ptr> eval_fn(value_ptr f, value_ptr a) {
             if ( f->kind == value::type::BuiltinFunction ) {
-                auto fn = std::get<function>(f->var);
+                auto fn = std::get<builtin_function>(f->var);
                 return fn(env,a);
             } else {
                 return error { "Not yet implemented."};
             }
-
         }
 
         either<error,value_ptr> eval_sexpression(value_ptr v) {

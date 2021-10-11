@@ -24,7 +24,7 @@ namespace inky {
 
         /* insert a value for a given name in the outermost environment scope,
          * that this environment has access to. */
-        void insert_outer(const std::string& name, value_ptr value);
+        void insert_global(const std::string& name, value_ptr value);
 
     private:
         /* hash map of values in the environment; the environment manages the ownership of values. */
