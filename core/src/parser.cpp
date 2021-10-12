@@ -32,7 +32,7 @@ namespace inky {
      * out in a hurry (it was), see notes above... */
     class parser {
     public:
-        explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()), in_lambda(false) {}
+        explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()) {}
         ~parser() = default;
 
         either<error,value_ptr> parse() { return read_expr(false,'\0'); }
@@ -64,8 +64,6 @@ namespace inky {
             if ( *i == '(') { /* s-expression. */
                 ++i;
                 bool is_quoted=false;
-                // TODO - we may not need to do this here; at eval time, we know that we have [ argument list]
-                // TODO - with a lambda, so the first step could be to assign the body to a q-expression.
                 rtn = read_expr(is_quoted,')');
             }
             else if ( *i == '\'') {
@@ -143,7 +141,6 @@ namespace inky {
                     return j.left_value();
                 }
             }
-            in_lambda = end_ch == ']' ? true : false;
             ++i;
             return value_ptr(val);
         }
@@ -183,13 +180,6 @@ namespace inky {
         std::string_view::const_iterator b;  /* the beginning of the input. */
         std::string_view::const_iterator i;  /* current position in the input view. */
         std::string_view::const_iterator e;  /* the end of the input view. */
-
-        /*
-         * flag to indicate if we have read function or lambda
-         * arguments via [ args ], if so, the body is expected next,
-         * so treat the s-expression as quoted.
-         */
-        bool in_lambda;
     };
 
 
