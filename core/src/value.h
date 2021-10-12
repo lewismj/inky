@@ -57,8 +57,14 @@ namespace inky {
         };
         typedef std::shared_ptr<lambda> lambda_ptr;
 
+        /* s or q expression cells;
+         * todo: possibly this could be within the variant.
+         *       we would want a cell_ptr (i.e. shared_ptr),
+         *       having it here (on each value which may be empty)
+         *       is convenient (no, std::get<> or checking kind type).
+         */
+        std::deque<value_ptr> cells;
         std::variant<long, double, std::string, builtin_function, lambda_ptr > var;
-        std::deque<value_ptr> cells;   /* s-expression values. */
     };
 
     std::ostream& operator<<(std::ostream& os, value_ptr value);

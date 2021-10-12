@@ -50,26 +50,44 @@ namespace inky {
                 if ( symbol->kind != value::type::Symbol ) return error {"Function eval failed formal not a symbol."};
                 std::string symbol_name = std::get<std::string>(symbol->var);
 
-                if ( symbol_name == "&") { /* var args.... */
-                    return error { "varargs not yet implement."};
+                if ( symbol_name == "&") {
+                    if ( fn->formals->cells.size() != 1) {
+                       return error {"Function formal signature invalid, & must have 1 following symbol."} ;
+                    }
+                    /* we have something of the form "x & xs"; bind the 'xs' symbol to list of supplied args. */
+                    value_ptr tmp = fn->formals->cells[0]; fn->formals->cells.pop_front();
+                    if ( tmp->kind != value::type::Symbol) return error {"Function formal not symbol."};
+                    auto xs = inky::builtin::builtin_list(env,a);
+                    if ( xs.is_right() ) fn->env->insert(std::get<std::string>(tmp->var),xs.right_value());
+                    else return xs.left_value(); /* error */
                 }
 
                 value_ptr argument = a->cells[0]; a->cells.pop_front();
                 fn->env->insert(symbol_name,argument);
             }
 
+            if (!fn->formals->cells.empty()) {
+                value_ptr tmp = fn->formals->cells[0];
+                if ( tmp->kind == value::type::Symbol && std::get<std::string>(tmp->var) == "&") {
+                    if ( fn->formals->cells.size() != 2 ) {
+                        return error {"Function signature should be of the form: x & xs, for variable arguments."};
+                    }
+                    fn->formals->cells.pop_front();
+                    value_ptr xs = fn->formals->cells[0]; fn->formals->cells.pop_front();
+                    if ( xs->kind != value::type::Symbol) return error { "Function formal must be symbol."};
+                    value_ptr q_expr(new value(value::type::QExpression));
+                    fn->env->insert(std::get<std::string>(xs->var),q_expr);
+                }
+            }
 
-
-            if (fn->formals->cells.empty()) {
+            if (fn->formals->cells.empty()) { /* all arguments have been supplied. */
                 fn->env->set_outer_scope(env);
-
                 value_ptr body = fn->body->clone();
                 body->kind = value::type::SExpression;
-
                 return inky::eval(fn->env, body);
             }
 
-            return f->clone();
+            return f->clone(); /* partially applied function. */
         }
 
         either<error,value_ptr> eval_sexpression(value_ptr v) {

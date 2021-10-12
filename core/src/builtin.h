@@ -10,5 +10,5 @@ namespace inky::builtin {
 
     /* Used by eval itself. */
     either<error,value_ptr> builtin_eval(environment_ptr e, value_ptr a);
-
+    either<error,value_ptr> builtin_list(environment_ptr e, value_ptr a);
 }
