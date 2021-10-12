@@ -21,7 +21,10 @@ Lots of other project have done similar:
 Mainly done as a prototype. Even the better Lisp interpreters basically just improve on:
 
 - parsing (using combinators, I looked at Spirit, will look for something else ...)
+- macro expansion to avoid [] for function definitions etc.
+- tail call optimisation on the eval (see below).
 - repl (using editline etc., Will evaluate for a 'proper' implementation)
+
 
 For eval, I've seen lots of interpreters for LISP. But none that follow:
 
@@ -31,6 +34,9 @@ i.e. Build an a Lambda Calculus engine (with the reductions/optimisations) and c
 Then convert the AST to the LC for evaluation.
 
 So a 'real' implementation to follow that would take longer.
+
+![icon](https://github.com/lewismj/inky/blob/main/doc/resources/img/screenshot1.png)
+
 
 
 ## Dependencies
