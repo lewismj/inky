@@ -12,6 +12,30 @@ namespace inky {
         std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
     }
 
+    value_ptr value::clone() {
+        value_ptr rtn(new value(kind));             /* copy the kind. */
+
+        /* clone the cells. */
+        for (const auto& cell: cells) rtn->cells.push_back(cell->clone());
+
+        /* clone the var... */
+        if ( kind != value::type::Function )  { /* if not a lambda, just copy. */
+            rtn->var = var;
+        } else {
+            /* clone the lambda. */
+            lambda_ptr lambda = std::get<lambda_ptr>(var);
+            lambda_ptr copy(new value::lambda());
+
+            copy->formals = lambda->formals->clone();
+            copy->body = lambda->formals->clone();
+            copy->env = lambda->env; /* don't copy, refer to same scope. */
+
+            rtn->var = copy;
+        }
+
+        return rtn;
+    }
+
     /* Utility, useful for debugging etc. */
     std::ostream& to_expression_str(std::ostream& os, const value_ptr& v) {
         if (v->kind == value::type::QExpression) os << "[";

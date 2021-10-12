@@ -95,11 +95,8 @@ namespace inky::builtin {
 
 
     /*
-     * min/max; we don't use *minelement, or *maxelement from std:: here;
-     * (we could ignore non-numeric fields in cells); want to preserve
-     * if possible the types and cast where necessary (long to double).
-     * Also need the type check; restrictive at the moment to numeric only
-     * fields.
+     * min/max; this is for testing purposes only!!
+     * the prelude should implement a "fold" function; allowing  'fold ( + ... )' etc.
      */
     either<error,value_ptr> builtin_cmp(environment_ptr /*ignore */, value_ptr v, numeric_cmp cmp) {
         if (v->cells.empty()) { /* check for unary minus? */
@@ -301,7 +298,10 @@ namespace inky::builtin {
         e->insert("*",value_ptr(new value(builtin_multiply)));
         e->insert("/",value_ptr(new value(builtin_divide)));
 
-        /* min/max; for numerical values. */
+        /* min/max; for numerical values: N.B.:
+         *    these are only included for testng purposes only.
+         *    prelude should implement fold etc.
+         */
         auto builtin_min = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { lt<long>, lt<double> }); };
         auto builtin_max = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { gt<long>, gt<double> }); };
         e->insert("min",value_ptr(new value(builtin_min)));

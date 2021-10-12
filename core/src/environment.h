@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 #include <unordered_map>
 #include <string>
 #include "types.h"
@@ -26,6 +27,11 @@ namespace inky {
          * that this environment has access to. */
         void insert_global(const std::string& name, value_ptr value);
 
+        /* set the outer cope of this environment. */
+        void set_outer_scope(environment_ptr e);
+
+        friend std::ostream& operator<<(std::ostream& os, environment_ptr env);
+
     private:
         /* hash map of values in the environment; the environment manages the ownership of values. */
         std::unordered_map<std::string, value_ptr > expressions;
@@ -34,4 +40,5 @@ namespace inky {
         environment_ptr outer;
     };
 
+    std::ostream& operator<<(std::ostream& os, environment_ptr env);
 }

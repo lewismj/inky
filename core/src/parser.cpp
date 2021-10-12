@@ -28,7 +28,8 @@ namespace inky {
      *   one go, rather that via the iterator...
      */
 
-    /* Implements simple recursive descent parser (&lexer). */
+    /* Implements simple recursive descent parser (&lexer); this looks like it was bashed
+     * out in a hurry (it was), see notes above... */
     class parser {
     public:
         explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()), in_lambda(false) {}

@@ -31,4 +31,23 @@ namespace inky {
         }
     }
 
+    void environment::set_outer_scope(environment_ptr e) {
+        outer = e;
+    }
+
+    std::ostream& operator<<(std::ostream& os, environment_ptr env) {
+
+         os << "environment:\n";
+         for (const auto& kv: env->expressions) {
+             os << ":" << kv.first << " " << kv.second << "\n";
+         }
+
+         if ( env->outer != nullptr) {
+             os << "parent ..\n";
+             os << env->outer << "\n";
+         }
+
+        return os;
+    }
+
 }

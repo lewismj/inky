@@ -1,9 +1,6 @@
 #include <repl.h>
 
-/*
- * Runs the repl for the Lisp environment; allow some
- */
-int main(int, char**) {
+int main(int, char**) { /* Run the Lisp repl. */
 
     inky::repl_context ctx; /* Allow command line params to configure starting context. */
     inky::repl(ctx);
