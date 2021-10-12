@@ -13,9 +13,9 @@ This is a throwaway project proof of concept. Interpreter for Common Lisp (like)
 
 Lots of other project have done similar:
 
-https://github.com/orangeduck/BuildYourOwnLisp 
-https://github.com/kanaka/mal
-https://github.com/adam-mcdaniel/wisp
+- https://github.com/orangeduck/BuildYourOwnLisp 
+- https://github.com/kanaka/mal
+- https://github.com/adam-mcdaniel/wisp
 
 
 Mainly done as a prototype. Even the better Lisp interpreters basically just improve on:
