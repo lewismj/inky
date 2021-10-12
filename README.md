@@ -18,10 +18,13 @@ Lots of other project have done similar:
 - https://github.com/adam-mcdaniel/wisp
 
 
+Almost all interpreters will use the control flow of the host language (have eval potentially call itself).
+And not something to change in an experiment.
+
 Mainly done as a prototype. Even the better Lisp interpreters basically just improve on:
 
-- parsing (using combinators, I looked at Spirit, will look for something else ...)
-- macro expansion to avoid [] for function definitions etc.
+- parsing (using combinators. Used Parsec/FastParse for Haskell and Scala; I looked at Spirit, will look for something else ...)
+- macro expansion to avoid special syntax [] for function definitions etc.
 - tail call optimisation on the eval (see below).
 - repl (using editline etc., Will evaluate for a 'proper' implementation)
 
