@@ -37,7 +37,8 @@ https://www.microsoft.com/en-us/research/wp-content/uploads/1987/01/slpj-book-19
 i.e. Build an a Lambda Calculus engine (with the reductions/optimisations) and compiler/interpreter for that.
 Then convert the AST to the LC for evaluation.
 
-So a 'real' implementation to follow that would take longer.
+So a 'real' implementation, basically doesn't rely on the host language for control flow.
+Though the basics of a useful intepreter don't really require a standalone language.
 
 ![icon](https://github.com/lewismj/inky/blob/main/doc/resources/img/screenshot1.png)
 
