@@ -38,8 +38,13 @@ namespace inky {
              * iii) allow variable number of args.
              */
 
+            // todo - should clone otherwise args will be lost after 1st invocation....
+
             size_t arg_count = a->cells.size();
             size_t formals_count = fn->formals->cells.size();
+
+            std::cout << "arg count:" << arg_count << "\n";
+            std::cout << "formals_count:" << formals_count << "\n";
 
             while ( ! a->cells.empty() ) { /* First step is to bind the symbols (variables) with supplied args. */
                 if (fn->formals->cells.empty()) {
