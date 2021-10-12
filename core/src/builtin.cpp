@@ -13,7 +13,6 @@ namespace inky::builtin {
     * full set of functions.
     */
 
-
     /*
      * If we are computing (+,-,/,*) we reduce the cells of 'v' to the accumulated value
      * (i.e. these functions are not for unary '-' etc.
@@ -188,7 +187,9 @@ namespace inky::builtin {
         }
         value_ptr v = a->cells[0]->cells[0];
         a->cells.erase(a->cells.begin(),a->cells.end());
-        return v;
+        value_ptr rtn (new value(value::type::QExpression));
+        rtn->insert(v);
+        return rtn;
     }
 
     either<error,value_ptr> builtin_tail(environment_ptr , value_ptr a) {
@@ -231,8 +232,9 @@ namespace inky::builtin {
     either<error,value_ptr> builtin_define(environment_ptr e, value_ptr a, bool outer_scope) {
         if (a->cells.empty()) {
            return error { "'defn' function missing arguments."} ;
-        }  else if ( a->cells[0]->kind != value::type::QExpression) {
-               return error{"'defn' expected [] argument list."};
+        }
+        else if ( a->cells[0]->kind != value::type::QExpression) {
+              return error{"'defn' expected [] argument list."};
         }
         value_ptr symbols = a->cells[0];
         if ( symbols->cells.size() != a->cells.size() -1 ) {
@@ -256,7 +258,7 @@ namespace inky::builtin {
         return value_ptr(new value(value::type::SExpression));
     }
 
-    either<error,value_ptr> builtin_defn(environment_ptr e, value_ptr a) {
+    either<error,value_ptr> builtin_def(environment_ptr e, value_ptr a) {
         return builtin_define(e,a, true);
     }
 
@@ -314,8 +316,8 @@ namespace inky::builtin {
         e->insert("eval",value_ptr(new value(builtin_eval)));
         e->insert("join",value_ptr(new value(builtin_join)));
 
-        /* defn , =  ; the former puts definition into global context, the later the local environment. */
-        e->insert("defn",value_ptr(new value(builtin_defn)));
+        /* def , =  ; the former puts definition into global context, the later the local environment. */
+        e->insert("def",value_ptr(new value(builtin_def)));
         e->insert("=",value_ptr(new value(builtin_put)));
 
         /* lambda function. */

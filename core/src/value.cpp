@@ -67,12 +67,9 @@ namespace inky {
                 os << "<builtin>";
                 break;
             case value::type::Function:
-                os << "<function>"; /* to-do, for functions, lambda etc. output formals/body. */
             case value::type::SExpression:
-                return to_expression_str(os,value);
             case value::type::QExpression:
                 return to_expression_str(os, value);
-                break;
         }
         return os;
     }

@@ -63,7 +63,7 @@ namespace inky {
             }
             if ( *i == '(') { /* s-expression. */
                 ++i;
-                bool is_quoted = in_lambda ? true : false;
+                bool is_quoted=false;
                 // TODO - we may not need to do this here; at eval time, we know that we have [ argument list]
                 // TODO - with a lambda, so the first step could be to assign the body to a q-expression.
                 rtn = read_expr(is_quoted,')');
@@ -164,16 +164,17 @@ namespace inky {
             ++i; /* move onto the string. */
             std::string_view::const_iterator s = i; /* mark start of string, if we error. */
             std::ostringstream os;
-            while ( *i != '"') {
+            while ( *i != '\"') {
                 if ( *i == '\0' ) { /* reached eol before end quote. */
-                    size_t start = std::distance(b,s);
-                    size_t distance = std::distance(b,i) - start;
-                    location loc { start, distance };
-                    return error { "String literal not terminated:", loc };
+                    size_t start = std::distance(b, s);
+                    size_t distance = std::distance(b, i) - start;
+                    location loc{start, distance};
+                    return error{"String literal not terminated:", loc};
                 }
                 os << *i;
-                ++i;
+                i++;
             }
+            i++;
             std::string literal(os.str());
             return value_ptr(new value(literal,true));
         }

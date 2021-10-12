@@ -24,11 +24,7 @@ namespace inky {
 
     void environment::insert_global(const std::string& name, value_ptr v) {
         if (outer == nullptr) insert(name,v);
-        else {
-           auto i = outer;
-           while (i != nullptr) { i = i->outer; }
-           i->insert(name, v);
-        }
+        else outer->insert_global(name, v); // todo: get rid of the recursion.
     }
 
     void environment::set_outer_scope(environment_ptr e) {

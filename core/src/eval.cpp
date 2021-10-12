@@ -1,9 +1,10 @@
 #include <fmt/core.h>
+#include <sstream>
 
 #include "value.h"
-#include "environment.h"
 #include "eval.h"
 #include "builtin.h"
+
 
 namespace inky {
 
@@ -29,6 +30,7 @@ namespace inky {
              *   contains the arguments to pass to the function.
              */
             value::lambda_ptr fn = std::get<value::lambda_ptr>(f->var);
+            std::cout << "eval lambda function :" << fn << "\n";
 
             /* copy arguments to formals;
              * i)   if too many arguments - return an error.
@@ -113,7 +115,8 @@ namespace inky {
                 return eval_lambda_fn(lambda,v);
             }
 
-            return error { fmt::format("S-expression function type expected, actual: {}",v->cells[0]->kind) };
+            std::ostringstream  os;
+            return error { os.str() };
         }
 
         either<error,value_ptr> eval(value_ptr v) {
@@ -122,7 +125,9 @@ namespace inky {
                 case value::type::Symbol: {
                     auto key = std::get<std::string>(v->var);
                     auto lookup = env->lookup(key);
-                    if (lookup) return lookup;
+                    if (lookup) {
+                        return lookup;
+                    }
                     else return error{fmt::format("Unbound symbol {}", key)};
                 }
 
