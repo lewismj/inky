@@ -13,9 +13,10 @@ This is a throwaway project proof of concept. Interpreter for Common Lisp (like)
 
 Lots of other project have done similar:
 
-- https://github.com/orangeduck/BuildYourOwnLisp 
+- https://github.com/orangeduck/BuildYourOwnLisp (This has the syntax for quoted expressions to avoid having to 
+implement macro expension, useful if you want to quickly prototype, i.e. a working 'strawman').
 - https://github.com/kanaka/mal
-- https://github.com/adam-mcdaniel/wisp
+- https://github.com/adam-mcdaniel/wisp (This looks like a reasonably full implementation, the values aren't a descriminated union though, they could be).
 
 
 Mainly done as a prototype. Even the better Lisp interpreters basically just improve on:
