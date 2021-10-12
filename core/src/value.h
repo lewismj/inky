@@ -33,10 +33,7 @@ namespace inky {
         explicit value(const long l) : kind(type::Integer) { var = l; }
         explicit value(const double d) : kind(type::Double) { var = d; }
         explicit value(const std::string &s) : kind(type::Symbol) { var = s; }
-        explicit value(const std::string &s, bool literal) {
-            kind = literal ? type::String : type::Symbol;
-            var = s;
-        }
+        explicit value(const std::string &s, bool literal) { kind = literal ? type::String : type::Symbol; var = s; }
         explicit value(const builtin_function &f) : kind(type::BuiltinFunction) { var = f; }
         explicit value(std::shared_ptr<lambda>& l): kind(type::Function) { var = l;}
         explicit value(type t) { kind = t; }
@@ -46,7 +43,7 @@ namespace inky {
         void insert(value_ptr v);               /* insert a value into this (cell). */
         void move(value_ptr v);                 /* move cells of v into this & delete v. */
 
-        value_ptr clone(); /* deep copy, used for functions. */
+        value_ptr clone();                      /* deep copy, used for functions. */
 
         [[nodiscard]] bool is_numeric() const { return kind == type::Double || kind == type::Integer; }
         [[nodiscard]] bool is_function() const  { return kind == type::Function || kind == type::BuiltinFunction; }

@@ -58,10 +58,10 @@ namespace inky {
                 fn->env->insert(symbol_name,argument);
             }
 
+
+
             if (fn->formals->cells.empty()) {
                 fn->env->set_outer_scope(env);
-
-                value_ptr expr(new value(value::type::SExpression));
 
                 value_ptr body = fn->body->clone();
                 body->kind = value::type::SExpression;
@@ -69,7 +69,7 @@ namespace inky {
                 return inky::eval(fn->env, body);
             }
 
-            return f; // should copy?
+            return f->clone();
         }
 
         either<error,value_ptr> eval_sexpression(value_ptr v) {

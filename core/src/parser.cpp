@@ -154,7 +154,7 @@ namespace inky {
                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                 "0123456789_+-*\\/=<>!&", *i) && *i != '\0') {
                os << *i;
-               i++;
+               ++i;
             }
 
             return value_ptr(new value(os.str()));
