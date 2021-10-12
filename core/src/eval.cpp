@@ -30,7 +30,6 @@ namespace inky {
              *   contains the arguments to pass to the function.
              */
             value::lambda_ptr fn = std::get<value::lambda_ptr>(f->var);
-            std::cout << "eval lambda function :" << fn << "\n";
 
             /* copy arguments to formals;
              * i)   if too many arguments - return an error.
@@ -38,31 +37,28 @@ namespace inky {
              * iii) allow variable number of args.
              */
 
-            // todo - should clone otherwise args will be lost after 1st invocation....
-
             size_t arg_count = a->cells.size();
-            size_t formals_count = fn->formals->cells.size();
+            value_ptr formals = fn->formals->clone(); /* clone the formals for each execution. */
+            size_t formals_count = formals->cells.size();
 
-            std::cout << "arg count:" << arg_count << "\n";
-            std::cout << "formals_count:" << formals_count << "\n";
 
             while ( ! a->cells.empty() ) { /* First step is to bind the symbols (variables) with supplied args. */
-                if (fn->formals->cells.empty()) {
+                if (formals->cells.empty()) {
                     std::string str = fmt::format("Function passed too many arguments {} , expected {}", arg_count,
                                                   formals_count);
                     return error{str};
                 }
 
-                value_ptr symbol = fn->formals->cells[0]; fn->formals->cells.pop_front();
+                value_ptr symbol = formals->cells[0]; formals->cells.pop_front();
                 if ( symbol->kind != value::type::Symbol ) return error {"Function eval failed formal not a symbol."};
                 std::string symbol_name = std::get<std::string>(symbol->var);
 
                 if ( symbol_name == "&") {
-                    if ( fn->formals->cells.size() != 1) {
+                    if ( formals->cells.size() != 1) {
                        return error {"Function formal signature invalid, & must have 1 following symbol."} ;
                     }
                     /* we have something of the form "x & xs"; bind the 'xs' symbol to list of supplied args. */
-                    value_ptr tmp = fn->formals->cells[0]; fn->formals->cells.pop_front();
+                    value_ptr tmp = formals->cells[0]; formals->cells.pop_front();
                     if ( tmp->kind != value::type::Symbol) return error {"Function formal not symbol."};
                     auto xs = inky::builtin::builtin_list(env,a);
                     if ( xs.is_right() ) fn->env->insert(std::get<std::string>(tmp->var),xs.right_value());
@@ -73,21 +69,21 @@ namespace inky {
                 fn->env->insert(symbol_name,argument);
             }
 
-            if (!fn->formals->cells.empty()) {
-                value_ptr tmp = fn->formals->cells[0];
+            if (!formals->cells.empty()) {
+                value_ptr tmp = formals->cells[0];
                 if ( tmp->kind == value::type::Symbol && std::get<std::string>(tmp->var) == "&") {
-                    if ( fn->formals->cells.size() != 2 ) {
+                    if ( formals->cells.size() != 2 ) {
                         return error {"Function signature should be of the form: x & xs, for variable arguments."};
                     }
-                    fn->formals->cells.pop_front();
-                    value_ptr xs = fn->formals->cells[0]; fn->formals->cells.pop_front();
+                    formals->cells.pop_front();
+                    value_ptr xs = formals->cells[0]; formals->cells.pop_front();
                     if ( xs->kind != value::type::Symbol) return error { "Function formal must be symbol."};
                     value_ptr q_expr(new value(value::type::QExpression));
                     fn->env->insert(std::get<std::string>(xs->var),q_expr);
                 }
             }
 
-            if (fn->formals->cells.empty()) { /* all arguments have been supplied. */
+            if (formals->cells.empty()) { /* all arguments have been supplied. */
                 fn->env->set_outer_scope(env);
                 value_ptr body = fn->body->clone();
                 body->kind = value::type::SExpression;

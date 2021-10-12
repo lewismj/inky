@@ -104,4 +104,11 @@ namespace inky {
         return os;
     }
 
+    std::ostream& operator<<(std::ostream& os, value::lambda_ptr lambda) {
+       os << "lambda:\n";
+       os << "\tformals:" << lambda->formals << "\n";
+       os << "\tbody:" << lambda->body << "\n";
+       return os;
+    }
+
 };

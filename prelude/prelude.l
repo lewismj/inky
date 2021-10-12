@@ -5,5 +5,3 @@
 def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 
 defun [add-me x y] [+ x y]
-; subsequent call fails, failing to clone args somewhere...
-defun [add-me x y] [+ x y] 

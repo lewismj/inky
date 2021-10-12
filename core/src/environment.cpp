@@ -33,7 +33,7 @@ namespace inky {
 
     std::ostream& operator<<(std::ostream& os, environment_ptr env) {
          for (const auto& kv: env->expressions) {
-             os << ":" << kv.first << " " << kv.second << "\n";
+             os << "\t:" << kv.first << " " << kv.second << "\n";
          }
          if ( env->outer != nullptr) {
              os << env->outer << "\n";

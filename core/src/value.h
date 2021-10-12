@@ -69,4 +69,5 @@ namespace inky {
 
     std::ostream& operator<<(std::ostream& os, value_ptr value);
     std::ostream& operator<<(std::ostream& os, value::type kind);
+    std::ostream& operator<<(std::ostream& os, value::lambda_ptr);
 }
