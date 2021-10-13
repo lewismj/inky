@@ -27,7 +27,7 @@ namespace inky {
             lambda_ptr copy(new value::lambda());
 
             copy->formals = lambda->formals->clone();
-            copy->body = lambda->formals->clone();
+            copy->body = lambda->body->clone();
             copy->env = lambda->env; /* don't copy, refer to same scope. */
 
             rtn->var = copy;
