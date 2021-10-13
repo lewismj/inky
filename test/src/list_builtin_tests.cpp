@@ -18,10 +18,10 @@ TEST_CASE("builtin list primitives","[basic-list-1]") {
     builtin::add_builtin_functions(e);
 
     std::initializer_list<test_case> tests  = {
-            { "head [10 9 8 7]", value::type::Integer, 10 },
+            { "eval (head [10 9 8 7])", value::type::Integer, 10 },
             { "eval [+ 10 1]", value::type::Integer, 11},
-            { "(head (tail [1 2 3 4]))", value::type::Integer, 2},
-            { "(head (list 1 2 3 4))", value::type::Integer, 1}
+            { "eval (head (tail [1 2 3 4]))", value::type::Integer, 2},
+            { "eval (head (list 1 2 3 4))", value::type::Integer, 1}
     };
 
     verify_test_cases(e,tests);

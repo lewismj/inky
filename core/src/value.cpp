@@ -1,6 +1,6 @@
 #include <iterator>
 #include "value.h"
-
+#include "environment.h"
 
 namespace inky {
 
@@ -28,7 +28,8 @@ namespace inky {
 
             copy->formals = lambda->formals->clone();
             copy->body = lambda->body->clone();
-            copy->env = lambda->env; /* don't copy, refer to same scope. */
+            //copy->env = lambda->env; /* don't copy, refer to same scope. */
+            copy->env->set_outer_scope(lambda->env->get_outer_scope());
 
             rtn->var = copy;
         }

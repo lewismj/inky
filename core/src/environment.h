@@ -30,6 +30,8 @@ namespace inky {
         /* set the outer cope of this environment. */
         void set_outer_scope(environment_ptr e);
 
+        environment_ptr get_outer_scope() { return outer; }
+
         friend std::ostream& operator<<(std::ostream& os, environment_ptr env);
 
     private:
