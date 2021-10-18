@@ -1,13 +1,10 @@
 #pragma once
 
-#include "types.h"
+#include "either.h"
+#include "value.h"
 
-namespace inky {
+namespace Inky::Lisp {
 
-    /* Main evaluate,
-     * for each expression; evaluate sub-expressions
-     * evaluate the top-level expression; given an environment.
-     */
-    either<error,value_ptr> eval(environment_ptr e, value_ptr v);
-    either<error,value_ptr> eval(environment_ptr e, either<error, value_ptr> v);
+    Either<Error,ValuePtr> eval(EnvironmentPtr env, ValuePtr val);
+
 }

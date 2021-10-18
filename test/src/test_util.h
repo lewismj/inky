@@ -1,17 +1,17 @@
 #pragma once
 
 #include <initializer_list>
-#include "parser.h"
-#include "eval.h"
+#include <variant>
+
 #include "value.h"
-#include "types.h"
-#include "builtin.h"
+#include "environment.h"
 
+using namespace Inky::Lisp;
 
-    struct test_case {
+    struct TestCase {
         std::string expression;             /* the input lisp expression. */
-        inky::value::type kind;             /* the expected output type. */
+        Type kind;             /* the expected output type. */
         std::variant<long, double> result;   /* variant holding the expected result. */
     };
 
-    void verify_test_cases(inky::environment_ptr e, std::initializer_list<test_case> &tests);
+    void verifyTestCases(EnvironmentPtr e, std::initializer_list<TestCase> &tests);

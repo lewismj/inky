@@ -1,165 +1,167 @@
 #include <fmt/core.h>
 #include <sstream>
 
+#include "environment.h"
 #include "value.h"
+
 #include "eval.h"
-#include "builtin.h"
 
+namespace Inky::Lisp {
 
-namespace inky {
-
-    class eval_impl {
+    class Eval {
     public:
 
-        explicit eval_impl(environment_ptr e): env(e) {}
-        ~eval_impl() = default;
+        explicit Eval(EnvironmentPtr e): env(e) {}
 
-        either<error,value_ptr> eval_builtin_fn(value_ptr f, value_ptr a) {
-                auto fn = std::get<builtin_function>(f->var);
-                return fn(env,a);
-        }
-
-        either<error,value_ptr> eval_lambda_fn(value_ptr f, value_ptr a) {
-            /* f contains:
-             * the struct 'lambda':
-             *  formals (Argument specification).
-             *  body (Body of the function intself).
-             *  evaluation environment.
-             *
-             *  a sexpression:
-             *   contains the arguments to pass to the function.
-             */
-            value::lambda_ptr fn = std::get<value::lambda_ptr>(f->var);
-
-            /* copy arguments to formals;
-             * i)   if too many arguments - return an error.
-             * ii)  too few, then partially apply.
-             * iii) allow variable number of args.
-             */
-
-            size_t arg_count = a->cells.size();
-            value_ptr formals = fn->formals->clone(); /* clone the formals for each execution. */
-            size_t formals_count = formals->cells.size();
+        ~Eval() = default;
 
 
-            while ( ! a->cells.empty() ) { /* First step is to bind the symbols (variables) with supplied args. */
-                if (formals->cells.empty()) {
-                    std::string str = fmt::format("Function passed too many arguments {} , expected {}", arg_count,
-                                                  formals_count);
-                    return error{str};
-                }
-
-                value_ptr symbol = formals->cells[0]; formals->cells.pop_front();
-                if ( symbol->kind != value::type::Symbol ) return error {"Function eval failed formal not a symbol."};
-                std::string symbol_name = std::get<std::string>(symbol->var);
-
-                if ( symbol_name == "&") {
-                    if ( formals->cells.size() != 1) {
-                       return error {"Function formal signature invalid, & must have 1 following symbol."} ;
-                    }
-                    /* we have something of the form "x & xs"; bind the 'xs' symbol to list of supplied args. */
-                    value_ptr tmp = formals->cells[0]; formals->cells.pop_front();
-                    if ( tmp->kind != value::type::Symbol) return error {"Function formal not symbol."};
-                    auto xs = inky::builtin::builtin_list(env,a);
-                    if ( xs.is_right() ) fn->env->insert(std::get<std::string>(tmp->var),xs.right_value());
-                    else return xs.left_value(); /* error */
-                }
-
-                value_ptr argument = a->cells[0]; a->cells.pop_front();
-                fn->env->insert(symbol_name,argument);
-            }
-
-            if (!formals->cells.empty()) {
-                value_ptr tmp = formals->cells[0];
-                if ( tmp->kind == value::type::Symbol && std::get<std::string>(tmp->var) == "&") {
-                    if ( formals->cells.size() != 2 ) {
-                        return error {"Function signature should be of the form: x & xs, for variable arguments."};
-                    }
-                    formals->cells.pop_front();
-                    value_ptr xs = formals->cells[0]; formals->cells.pop_front();
-                    if ( xs->kind != value::type::Symbol) return error { "Function formal must be symbol."};
-                    value_ptr q_expr(new value(value::type::QExpression));
-                    fn->env->insert(std::get<std::string>(xs->var),q_expr);
-                }
-            }
-
-            if (formals->cells.empty()) { /* all arguments have been supplied. */
-                fn->env->set_outer_scope(env);
-                value_ptr body = fn->body->clone();
-                body->kind = value::type::SExpression;
-                return inky::eval(fn->env, body);
-            }
-
-            return f->clone(); /* partially applied function. */
-        }
-
-        either<error,value_ptr> eval_sexpression(value_ptr v) {
-            if ( v->cells.empty() ) return v;
-            if ( v->cells.size() == 1) return eval(v->cells[0]);
-
-            /* First evaluate all the sub-expressions. */
-            for (auto & cell : v->cells) {
-                auto maybe = eval(cell);
-                if ( maybe ) cell = maybe.right_value();
-                else return maybe.left_value();
-            }
-
-            /* First cell should be a function type (builtin or defined). */
-            if ( v->cells[0]->kind == value::type::BuiltinFunction ) {
-                value_ptr fn = v->cells[0];
-                v->cells.pop_front();
-                return eval_builtin_fn(fn,v);
-            }
-            else if ( v->cells[0]->kind == value::type::Function )  {
-                value_ptr lambda = v->cells[0];
-                v->cells.pop_front();
-                return eval_lambda_fn(lambda,v);
-            }
-
-            std::ostringstream  os;
-            return error { os.str() };
-        }
-
-        either<error,value_ptr> eval(value_ptr v) {
+        Either<Error,ValuePtr> eval(ValuePtr v) {
             switch (v->kind) {
-                /* If v is a symbol, lookup value of v in the environment and return it. */
-                case value::type::Symbol: {
+
+                case Type::Symbol: {
                     auto key = std::get<std::string>(v->var);
                     auto lookup = env->lookup(key);
                     if (lookup) {
                         return lookup;
                     }
-                    else return error{fmt::format("Unbound symbol {}", key)};
+                    else {
+                        return Error {fmt::format("unbound symbol: {}",key)};
+                    }
                 }
 
-                /* If v is an s-expression, evaluate sub-expressions then the expression itself.*/
-                case value::type::SExpression:
-                    return eval_sexpression(v);
+                case Type::SExpression:
+                    return evalSExpression(v);
 
-                /* Otherwise, return value. */
-                case value::type::Integer:
-                case value::type::Double:
-                case value::type::String:
-                case value::type::QExpression:
-                case value::type::BuiltinFunction:
-                case value::type::Function:
+                case Type::Integer:
+                case Type::Double:
+                case Type::String:
+                case Type::QExpression:
+                case Type::BuiltinFunction:
+                case Type::Function:
                     return v;
             }
         }
 
+        Either<Error,ValuePtr> evalSExpression(ValuePtr vp) {
+            ExpressionPtr v = std::get<ExpressionPtr>(vp->var);
+
+            if ( v->cells.empty() ) return vp;
+            if ( v->cells.size() == 1) return eval(v->cells[0]);
+
+            for (auto & cell : v->cells) {
+                auto maybe = eval(cell);
+                if ( maybe ) cell = maybe.right();
+                else return maybe.left();
+            }
+
+            /* First cell should be a function type (builtin or defined). */
+            if ( v->cells[0]->kind == Type::BuiltinFunction ) {
+                ValuePtr fn = v->cells[0];
+                v->cells.pop_front();
+                return evalBuiltinFunction(fn,vp);
+            }
+            else if ( v->cells[0]->kind == Type::Function )  {
+                ValuePtr lambda = v->cells[0];
+                v->cells.pop_front();
+                return evalLambdaFunction(lambda,vp);
+
+            }
+
+            return Error {fmt::format("expression evaluation failed, unknown type.")};
+        }
+
+        Either<Error,ValuePtr> evalLambdaFunction(ValuePtr f, ValuePtr ar) {
+            /* f contains:
+             * the struct 'lambda':
+             *  formals (Argument specification).
+             *  body (Body of the function itself).
+             *  evaluation environment.
+             *
+             *  a sexpression:
+             *   contains the arguments to pass to the function.
+             */
+            LambdaPtr fn = std::get<LambdaPtr>(f->var);
+
+            /* copy arguments to formals;
+             * i)   if too many arguments - return an Error.
+             * ii)  too few, then partially apply.
+             * iii) allow variable number of args.
+             */
+
+            ExpressionPtr a = std::get<ExpressionPtr>(ar->var);
+
+            size_t arg_count = a->cells.size();
+            ValuePtr formalsV = fn->formals->clone(); /* clone the formals for each execution. */
+            ExpressionPtr formals = std::get<ExpressionPtr>(formalsV->var);
+
+            size_t formals_count = formals->cells.size();
+
+
+            while ( ! a->cells.empty() ) {
+                if (formals->cells.empty()) {
+                    std::string str = fmt::format("function passed too many arguments {} , expected {}", arg_count, formals_count);
+                    return Error { str };
+                }
+
+                ValuePtr symbol = formals->cells[0]; formals->cells.pop_front();
+                if ( symbol->kind != Type::Symbol ) return Error {"function eval failed formal not a symbol."};
+                std::string symbol_name = std::get<std::string>(symbol->var);
+
+                if ( symbol_name == "&") {
+                    if ( formals->cells.size() != 1) {
+                        return Error {"function formal signature invalid, varargs '&' must have 1 following symbol."} ;
+                    }
+                    /* we have something of the form "x & xs"; bind the 'xs' symbol to list of supplied args. */
+                    ValuePtr tmp = formals->cells[0]; formals->cells.pop_front();
+                    if ( tmp->kind != Type::Symbol) return Error { "function formal not symbol."};
+                    auto f = Ops::makeSymbol("list");
+                    auto xs = evalBuiltinFunction(f,ar) ;
+                    //auto xs = inky::builtin::builtin_list(env,a);
+                    if ( xs ) fn->env->insert(std::get<std::string>(tmp->var),xs.right());
+                    else return xs.left(); /* error */
+                }
+
+                ValuePtr argument = a->cells[0]; a->cells.pop_front();
+                fn->env->insert(symbol_name,argument);
+            }
+
+            if (!formals->cells.empty()) {
+                ValuePtr tmp = formals->cells[0];
+                if ( tmp->kind == Type::Symbol && std::get<std::string>(tmp->var) == "&") {
+                    if ( formals->cells.size() != 2 ) {
+                        return Error {"function signature should be of the form: x & xs, for variable arguments."};
+                    }
+                    formals->cells.pop_front();
+                    ValuePtr xs = formals->cells[0]; formals->cells.pop_front();
+                    if ( xs->kind != Type::Symbol) return Error { "function formal must be symbol."};
+                    ValuePtr q_expr = Ops::makeQExpression();
+                    fn->env->insert(std::get<std::string>(xs->var),q_expr);
+                }
+            }
+
+            if (formals->cells.empty()) { /* all arguments have been supplied. */
+                fn->env->setOuterScope(env);
+                ValuePtr body = fn->body->clone();
+                body->kind = Type::SExpression;
+                return Inky::Lisp::eval(fn->env, body);
+            }
+
+            return f->clone(); /* partially applied function. */
+        }
+
+        Either<Error, ValuePtr> evalBuiltinFunction(ValuePtr f, ValuePtr a) {
+            auto fn = std::get<BuiltinFunction>(f->var);
+            return fn(env, a);
+        }
+
     private:
-        environment_ptr env;
+        EnvironmentPtr env;
     };
 
-    either<error,value_ptr> eval(environment_ptr e, value_ptr v) {
-        eval_impl i(e);
-        auto result = i.eval(v);
-        return result;
-    }
 
-    either<error,value_ptr> eval(environment_ptr e, either<error, value_ptr> v) {
-        if ( v.is_left()) return v.left_value();
-        else return eval(e,v.right_value());
+    Either<Error,ValuePtr> eval(EnvironmentPtr env, ValuePtr val) {
+        Eval ev(env);
+        return ev.eval(val);
     }
-
 }

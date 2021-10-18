@@ -1,38 +1,145 @@
 #include <algorithm>
+#include <initializer_list>
+#include <sstream>
+#include <variant>
 #include <fmt/core.h>
 
-#include "types.h"
+#include "eval.h"
 #include "value.h"
 #include "builtin.h"
-#include "eval.h"
 
-namespace inky::builtin {
 
-    /*
-    * Provide basic built-in functions. n.b; the Lisp prelude itself will 'bootstrap'
-    * full set of functions.
-    */
+namespace Inky::Lisp {
 
-    /*
-     * If we are computing (+,-,/,*) we reduce the cells of 'v' to the accumulated value
-     * (i.e. these functions are not for unary '-' etc.
-     * Need to check type and perform floating point calc. if needed).
-     *
-     * No type-classes/semi-group ...
-     */
 
+    Either<Error,ValuePtr> builtin_lambda(EnvironmentPtr env, ValuePtr p) {
+        if ( !p->isExpression() ) return Error { "lambda fn, formals & body must be [] expression."};
+        ExpressionPtr expression = std::get<ExpressionPtr>(p->var);
+
+        /*
+         * 'p' the result of the parse "(x) (+ 1 x)", lambda is the symbol matched, so p should contain
+         * the formals and the body of the function.
+         */
+        if ( expression->cells.size() != 2 ) {
+            std::string message = fmt::format("lambda expects 2 arguments formals & body, received: {}",expression->cells.size());
+            return Error {message };
+        }
+
+        /* Formals must be expression containing symbols. */
+        ValuePtr formals = expression->cells[0]; expression->cells.pop_front();
+        ValuePtr body = expression->cells[0];  expression->cells.pop_front();
+
+        if ( !formals->isExpression() ) return Error { "formals must be an expression containing symbols for arguments."};
+        ExpressionPtr formalExp = std::get<ExpressionPtr>(formals->var);
+        /* Do type check that they are all symbols. */
+        for (const auto& c: formalExp->cells) {
+            if (c->kind != Type::Symbol) return Error {"lambda function formal must be symbol."};
+        }
+
+        EnvironmentPtr e(new Environment()); /* Eval should set the outer scope? */
+
+        return Ops::makeFunction(std::make_shared<Lambda>(Lambda{ formals, body, e }));
+    }
+
+
+
+    Either<Error,ValuePtr> builtin_define(EnvironmentPtr e, ValuePtr a, bool insertIntoOuterScope) {
+        if ( !a->isExpression() ) return Error { "define parameters must be [] expressions." };
+        ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
+
+        if (expression->cells.empty()) return Error { "define missing arguments."};
+        ValuePtr first = expression->cells[0];
+        if ( ! first->isExpression()) return Error {"define argument must be an expression."};
+        ExpressionPtr symbols = std::get<ExpressionPtr>(first->var) ;
+
+        if ( symbols->cells.size() != expression->cells.size() -1 ) {
+                std::string message = fmt::format("unexpected number of arguments for symbols, received {}, expected {}. ",
+                                                  symbols->cells.size(), expression->cells.size() - 1);
+                return Error { message };
+        };
+
+        for (size_t i=0; i<symbols->cells.size(); i++) {
+            auto key = symbols->cells[i];
+            if ( key->kind != Type::Symbol ) {
+                auto tmp = eval(e,key);
+                if (tmp.isLeft()) return tmp.left();
+            }
+            auto val = expression->cells[i+1] ;
+
+
+            if (insertIntoOuterScope) e->insertGlobal(std::get<std::string>(key->var),val);
+            else e->insert(std::get<std::string>(key->var),val) ;
+        }
+
+        /* value defined, return empty s-expression. */
+        return Ops::makeSExpression();
+    }
+
+    Either<Error,ValuePtr> builtin_def(EnvironmentPtr e, ValuePtr a) {
+        return builtin_define(e,a,true);
+    }
+
+    Either<Error,ValuePtr> builtin_list(EnvironmentPtr , ValuePtr a) {
+        a->kind = Type::QExpression;
+        return a;
+    }
+
+    Either<Error,ValuePtr> builtin_head(EnvironmentPtr , ValuePtr a) {
+        if ( !a->isExpression() )  return Error {"argument to head function must be list expression." };
+        ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
+        if (expression->cells.size() != 1) return Error { "head function passed more than one argument."};
+
+        ValuePtr list = expression->cells[0];
+        ExpressionPtr xs = std::get<ExpressionPtr>(list->var);
+
+        ValuePtr head = xs->cells[0];
+        ExpressionPtr result(new Expression());
+        result->insert(head);
+
+        return Ops::makeQExpression(result);
+    }
+
+    Either<Error,ValuePtr> builtin_tail(EnvironmentPtr , ValuePtr a) {
+        if ( !a->isExpression() )  return Error { "argument to tail function must be list expression." };
+        ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
+        if (expression->cells.size() != 1) return Error {"tail function passed more than one argument."};
+
+        ValuePtr list = expression->cells[0];
+        ExpressionPtr xs = std::get<ExpressionPtr>(list->var);
+
+        xs->cells.pop_front(); /* Remove the head. */
+
+        return Ops::makeQExpression(xs);
+    }
+
+    Either<Error,ValuePtr> builtin_eval(EnvironmentPtr e, ValuePtr a) {
+        if (!a->isExpression()) return Error {"argument to eval function must be list expression."};
+        ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
+        if (expression->cells.size() != 1) return Error { "eval function passed more than one argument."};
+
+        ValuePtr xs = expression->cells[0];
+        xs->kind = Type::SExpression;
+        return eval(e, xs);
+    }
+
+    /* Define some primitive numerical operations, enough so that Prelude can boostrap more... */
     using integer_op = std::function<long(const long&, const long&)>;
     using double_op  = std::function<double(const double&, const double&)>;
 
     struct numeric_operators { integer_op  f; double_op   g; };
 
-    using integer_cmp = std::function<bool(const long&, const long&)>;
-    using double_cmp = std::function<bool(const double&, const double&)>;
+    template<typename T> T add(const T& a, const T& b) { return a+b; }
+    template<typename T> T subtract(const T& a, const T& b) { return a-b; }
+    template<typename T> T multiply(const T& a, const T& b) { return a*b; }
+    template<typename T> T divide(const T& a, const T& b) {
+        if ( b == 0 ) {
+            throw std::runtime_error("divide by zero.");
+        }
+        return a/b;
+    }
 
-    struct numeric_cmp { integer_cmp f; double_cmp g; };
 
-    /* here we're adding two s-expressions, no need to lookup anything from outer scope */
-    either<error, value_ptr> builtin_op(environment_ptr /* ignore. */, value_ptr v, numeric_operators nop) {
+    Either<Error, ValuePtr> builtin_op(EnvironmentPtr /* ignore. */, ValuePtr vp, numeric_operators nop) {
         /*
          * 1. check that we have cells to reduce.
          * 2. runtime type check:
@@ -44,26 +151,25 @@ namespace inky::builtin {
          *    and return the value (type will be double or integer).
          */
 
-        if (v->cells.empty()) { /* check for unary minus? */
-            return error{"runtime error, no cells to reduce"};
+        ExpressionPtr v = std::get<ExpressionPtr>(vp->var);
+
+        if (v->cells.empty()) {
+            return Error{"runtime error, no cells to reduce"};
         }
 
         bool is_double = false;
         for (const auto &c : v->cells) {
-            if (!c->is_numeric()) return error{"runtime_error, +,-,/,* reduce non numeric."};
-            if (c->kind == value::type::Double) is_double = true;
+            if (!c->isNumeric()) return Error{"runtime_Error, +,-,/,* reduce non numeric."};
+            if (c->kind == Type::Double) is_double = true;
         }
 
         /* If we have a double then any integer value should be cast to double. */
         std::variant<long, double> accumulator;
 
-        /* make sure variant has correct type. */
-        //accumulator = is_double ? static_cast<double>(0.0) : static_cast<long>(0);
-
-        value_ptr cell = v->cells[0];
+        ValuePtr cell = v->cells[0];
         if ( is_double ) {
             double cell_val =
-                    cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
+                    cell->kind == Type::Integer ? (double) std::get<long>(cell->var)
                                                        : std::get<double>(cell->var);
             accumulator =  cell_val;
         } else {
@@ -71,258 +177,52 @@ namespace inky::builtin {
         }
 
         for (int i = 1; i < v->cells.size(); i++) {
-            value_ptr c= v->cells[i];
+            ValuePtr c= v->cells[i];
 
             try {
                 if (is_double) {
                     double cell_val =
-                            c->kind == value::type::Integer ? (double) std::get<long>(c->var) : std::get<double>(c->var);
+                            c->kind == Type::Integer ? (double) std::get<long>(c->var) : std::get<double>(c->var);
                     accumulator = (double) nop.g(std::get<double>(accumulator), cell_val);
                 } else {
                     accumulator = nop.f(std::get<long>(accumulator), std::get<long>(c->var));
                 }
             } catch ( const std::runtime_error& e) {
-                return error { fmt::format("caught exception: {}", e.what())};
+                return Error {e.what()} ;
             }
         }
 
         v->cells.resize(0); /* erase the cells, they've been evaluated. */
 
-        if (is_double) return value_ptr(new value(std::get<double>(accumulator)));
-        return value_ptr(new value(std::get<long>(accumulator)));
+        if (is_double) return Ops::makeDouble(std::get<double>(accumulator));
+        return Ops::makeInteger(std::get<long>(accumulator));
     }
 
+    auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      { return builtin_op(e,v, { add<long>, add<double> }); };
+    auto builtin_subtract = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { subtract<long>, subtract<double> }); };
+    auto builtin_divide = [](EnvironmentPtr e, ValuePtr v)   { return builtin_op(e,v, { divide<long>, divide<double> }); };
+    auto builtin_multiply = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { multiply<long>, multiply<double> }); };
 
-    /*
-     * min/max; this is for testing purposes only!!
-     * the prelude should implement a "fold" function; allowing  'fold ( + ... )' etc.
-     */
-    either<error,value_ptr> builtin_cmp(environment_ptr /*ignore */, value_ptr v, numeric_cmp cmp) {
-        if (v->cells.empty()) { /* check for unary minus? */
-            return error{"runtime error, no cells to reduce"};
+
+    void addBuiltinFunctions(EnvironmentPtr env) {
+        std::initializer_list<std::pair<std::string,BuiltinFunction>> builtins = {
+                { "lambda", builtin_lambda},
+                { "define", builtin_def},
+                { "def", builtin_def},
+                {"\\", builtin_lambda},
+                { "list", builtin_list },
+                { "head", builtin_head},
+                {"tail", builtin_tail},
+                { "eval", builtin_eval},
+                { "+",builtin_add},
+                { "-",builtin_subtract},
+                { "/",builtin_divide},
+                {"*",builtin_multiply}
+        };
+
+        for (const auto& kv: builtins ) {
+            env->insert(kv.first, Ops::makeBuiltin(kv.second));
         }
-
-        bool is_double = false;
-        for (const auto &c : v->cells) {
-            if (!c->is_numeric()) return error{"runtime_error, +,-,/,* reduce non numeric."};
-            if (c->kind == value::type::Double) is_double = true;
-        }
-
-        std::variant<long, double> result;
-
-        value_ptr cell = v->cells[0];
-        if ( is_double ) {
-            double cell_val =
-                    cell->kind == value::type::Integer ? (double) std::get<long>(cell->var)
-                                                       : std::get<double>(cell->var);
-
-            result =  cell_val;
-        } else {
-            result = std::get<long>(cell->var);
-        }
-
-        for (int i = 1; i < v->cells.size(); i++) {
-            value_ptr c= v->cells[i];
-
-            try {
-                if (is_double) {
-                    double cell_val =
-                            c->kind == value::type::Integer ? (double) std::get<long>(c->var) : std::get<double>(c->var);
-                    if (cmp.g(cell_val,std::get<double>(result))) result = cell_val;
-                } else {
-                    long cell_val = std::get<long>(c->var);
-                    if (cmp.f(cell_val,std::get<long>(result))) result = cell_val;
-                }
-            } catch ( const std::runtime_error& e) {
-                return error { fmt::format("caught exception: {}", e.what())};
-            }
-        }
-
-        v->cells.resize(0); /* erase the cells, they've been evaluated. */
-
-        if (is_double) return value_ptr(new value(std::get<double>(result)));
-        return value_ptr(new value(std::get<long>(result)));
-    }
-
-
-    /* The purpose of the builtin is to provide very basic functions, the 'prelude' should
-     * be used to boostrap and provide a 'standard library'. A standard lib. should not be
-     * implemented as builtin functions.
-     */
-
-
-    template<typename T> T add(const T& a, const T& b) { return a+b; }
-    template<typename T> T subtract(const T& a, const T& b) { return a-b; }
-    template<typename T> T multiply(const T& a, const T& b) { return a*b; }
-    template<typename T> T divide(const T& a, const T& b) {
-        if ( b == 0 ) {
-            throw std::runtime_error("divide by zero.");
-        }
-        return a/b;
-    }
-    template<typename T> bool lt(const T& a, const T& b) { return a<b; }
-    template<typename T> bool gt(const T& a, const T& b) { return a>b; }
-
-
-    /* functions for dealing with lambda expressions/lists;
-     * list, head, tail, eval, join. */
-
-
-    /* n.b. in these operators we return errors on head or tail of empty lists etc,
-     * they're used for argument calling; list types can be fully implemented in a prelude,
-     * which may offer different semantics. */
-
-
-    either<error,value_ptr> builtin_list(environment_ptr , value_ptr a) {
-        a->kind = value::type::QExpression;
-        return a;
-    }
-
-    either<error,value_ptr> builtin_head(environment_ptr , value_ptr a) {
-        if (a->cells.size() != 1) {
-            std::string str = fmt::format("head operator expects 1 argument, actual:{}",a->cells.size());
-            return error { str };
-        } else if ( a->cells[0]->cells.empty() ) {
-            return error { "head operator received empty list." };
-        }
-        value_ptr v = a->cells[0]->cells[0];
-        a->cells.erase(a->cells.begin(),a->cells.end());
-        value_ptr rtn (new value(value::type::QExpression));
-        rtn->insert(v);
-        return rtn;
-    }
-
-    either<error,value_ptr> builtin_tail(environment_ptr , value_ptr a) {
-        if (a->cells.size() != 1) {
-            std::string str = fmt::format("tail operator expects 1 argument, actual:{}",a->cells.size());
-            return error { str };
-        } else if ( a->cells[0]->cells.empty() ) {
-            return error { "tail operator received empty list." };
-        }
-
-        value_ptr v = a->cells[0];
-        a->cells.erase(a->cells.begin(),a->cells.end());
-        v->cells.pop_front();
-        return v;
-    }
-
-    either<error,value_ptr> builtin_join(environment_ptr , value_ptr a) {
-        for (const auto& cell: a->cells) {
-            if (a->kind != value::type::QExpression ) return error { "join operator on non quoted expression. "};
-        }
-        value_ptr v = a->cells[0];
-        a->cells.pop_front();
-        v->move(a);
-        return v;
-    }
-
-    either<error,value_ptr> builtin_eval(environment_ptr e, value_ptr a) {
-        if (a->cells.size() != 1) {
-            std::string str = fmt::format("eval operator expects 1 argument, actual:{}",a->cells.size());
-            return error { str };
-        } else if ( a->cells[0]->kind != value::type::QExpression ) {
-            return error {"argument not quoted expression." };
-        }
-
-        a->cells[0]->kind = value::type::SExpression;
-        return inky::eval(e,a);
-    }
-
-
-    either<error,value_ptr> builtin_define(environment_ptr e, value_ptr a, bool outer_scope) {
-        if (a->cells.empty()) {
-           return error { "'defn' function missing arguments."} ;
-        }
-        else if ( a->cells[0]->kind != value::type::QExpression) {
-              return error{"'defn' expected [] argument list."};
-        }
-        value_ptr symbols = a->cells[0];
-        if ( symbols->cells.size() != a->cells.size() -1 ) {
-            std::string message
-                    = fmt::format("Unexpected number of arguments for symbols, received {}, expected {}. ",
-                                  symbols->cells.size(), a->cells.size() - 1);
-            return error { message };
-        }
-
-        for (size_t i=0; i<symbols->cells.size(); i++) {
-            auto key = symbols->cells[i];
-            if ( key->kind != value::type::Symbol ) {
-                return error { "'defn' argument list should contain symbols."};
-            }
-            auto val = a->cells[i+1];
-            if (outer_scope) e->insert_global(std::get<std::string>(key->var),val);
-            else e->insert(std::get<std::string>(key->var),val) ;
-        }
-
-        /* value defined, return empty s-expression. */
-        return value_ptr(new value(value::type::SExpression));
-    }
-
-    either<error,value_ptr> builtin_def(environment_ptr e, value_ptr a) {
-        return builtin_define(e,a, true);
-    }
-
-    either<error,value_ptr> builtin_put(environment_ptr e, value_ptr a) {
-        return builtin_define(e,a,false);
-    }
-
-    either<error,value_ptr> builtin_lambda(environment_ptr e, value_ptr a) {
-        if ( a->cells.size() != 2) {
-            std::string message = fmt::format("lambda expects 2 arguments formals & body, received: {}",a->cells.size());
-            return error { message };
-        }
-
-        for (const auto& c: a->cells[0]->cells) {
-            if ( c->kind != value::type::Symbol ) {
-                return error { "lambda arguments must be symbols."};
-            }
-        }
-
-        environment_ptr env(new environment());
-
-        value_ptr formals = a->cells.front(); a->cells.pop_front();
-        value_ptr body = a->cells.front(); a->cells.pop_front();
-
-        value::lambda_ptr l (new value::lambda { formals, body, env} );
-
-        return value_ptr( new value (l));
-    }
-
-    void add_builtin_functions(environment_ptr e) {
-        /* basic numerics. */
-        auto builtin_add = [](environment_ptr e, value_ptr v){ return builtin_op(e,v, { add<long>, add<double> }); };
-        auto builtin_subtract = [](environment_ptr e,value_ptr v){ return builtin_op(e,v, { subtract<long>, subtract<double> }); };
-        auto builtin_divide = [](environment_ptr e,value_ptr v){ return builtin_op(e,v, { divide<long>, divide<double> }); };
-        auto builtin_multiply = [](environment_ptr e, value_ptr v){ return builtin_op(e,v, { multiply<long>, multiply<double> }); };
-
-        e->insert("+", value_ptr(new value(builtin_add)));
-        e->insert("-",value_ptr(new value(builtin_subtract)));
-        e->insert("*",value_ptr(new value(builtin_multiply)));
-        e->insert("/",value_ptr(new value(builtin_divide)));
-
-        /* min/max; for numerical values: N.B.:
-         *    these are only included for testng purposes only.
-         *    prelude should implement fold etc.
-         */
-        auto builtin_min = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { lt<long>, lt<double> }); };
-        auto builtin_max = [](environment_ptr e, value_ptr v){ return builtin_cmp(e,v, { gt<long>, gt<double> }); };
-        e->insert("min",value_ptr(new value(builtin_min)));
-        e->insert("max",value_ptr(new value(builtin_max)));
-
-        /* q-expression, lambda primitives. */
-        e->insert("list",value_ptr(new value(builtin_list)));
-        e->insert("head",value_ptr(new value(builtin_head)));
-        e->insert("tail",value_ptr(new value(builtin_tail)));
-        e->insert("eval",value_ptr(new value(builtin_eval)));
-        e->insert("join",value_ptr(new value(builtin_join)));
-
-        /* def , =  ; the former puts definition into global context, the later the local environment. */
-        e->insert("def",value_ptr(new value(builtin_def)));
-        e->insert("=",value_ptr(new value(builtin_put)));
-
-        /* lambda function. */
-        e->insert("lambda",value_ptr(new value(builtin_lambda)));
-        e->insert("\\",value_ptr(new value(builtin_lambda)));
     }
 
 }

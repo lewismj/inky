@@ -1,16 +1,22 @@
 #include <catch2/catch.hpp>
 #include "test_util.h"
 
+#include "parser.h"
+#include "eval.h"
 
-void verify_test_cases(inky::environment_ptr e, std::initializer_list<test_case> &tests) {
+using namespace Inky::Lisp;
+
+
+void verifyTestCases(Inky::Lisp::EnvironmentPtr e, std::initializer_list<TestCase> &tests) {
     for (const auto &test: tests) {
-        auto result = eval(e, inky::parse(test.expression));
-        REQUIRE(result.is_right());
-        if (result.is_right()) {
-            inky::value_ptr val = result.right_value();
-            REQUIRE(val->is_numeric());
+        REQUIRE(parse(test.expression).isRight());
+        auto result = eval(e, parse(test.expression).right());
+        REQUIRE(result.isRight());
+        if (result.isRight()) {
+            Inky::Lisp::ValuePtr val = result.right();
+            REQUIRE(val->isNumeric());
             REQUIRE(val->kind == test.kind);
-            if (val->kind == inky::value::type::Integer) {
+            if (val->kind == Type::Integer) {
                 REQUIRE(std::get<long>(val->var) == std::get<long>(test.result));
             } else {
                 REQUIRE(std::get<double>(val->var) == std::get<double>(test.result));

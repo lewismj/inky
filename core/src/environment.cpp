@@ -1,43 +1,60 @@
 #include <algorithm>
-#include "environment.h"
+
 #include "value.h"
+#include "environment.h"
 
 
-namespace inky {
+namespace Inky::Lisp {
 
-
-    [[maybe_unused]] value_ptr environment::lookup(const std::string &name) {
-        auto i = expressions.find(name);
-        if (i != expressions.end()) return i->second;
-        else { // iteratively move up the outer environment scopes.
-            for (auto j = outer; j != nullptr; j = j->outer) {
-                i = outer->expressions.find(name);
-                if (i != expressions.end()) return i->second;
+    ValuePtr Environment::lookup(const std::string& name) const {
+        auto i = definitions.find(name);
+        if ( i != definitions.end()) return i->second;
+        else {
+            for (auto j=outer; j!=nullptr; j=j->outer) {
+                i = j->definitions.find(name);
+                if (i != j->definitions.end()) return i->second;
             }
         }
         return nullptr;
     }
 
-    void environment::insert(const std::string &name, value_ptr v) {
-        expressions[name] = v;
+   void Environment::insert(const std::string& name, ValuePtr value) {
+       definitions[name] = value;
+   }
+
+   EnvironmentPtr Environment::getGlobalScope() {
+        if (outer == nullptr) return nullptr; /* n.b. we don't return a shared_ptr to this. */
+        auto i = outer;
+        auto j = outer;
+        while ( j != nullptr ) {
+            i = j;
+            j = i->outer;
+        }
+        return i;
     }
 
-    void environment::insert_global(const std::string& name, value_ptr v) {
-        if (outer == nullptr) insert(name,v);
-        else outer->insert_global(name, v); // todo: get rid of the recursion.
+    void Environment::insertGlobal(const std::string &name, ValuePtr value) {
+        if ( outer == nullptr ) {
+            insert(name,value);
+        } else {
+            EnvironmentPtr global = getGlobalScope();
+            global->insert(name,value);
+        }
     }
 
-    void environment::set_outer_scope(environment_ptr e) {
-        outer = e;
+    void Environment::setOuterScope(EnvironmentPtr env) {
+        if ( env.get() != this) outer = env;
     }
 
-    std::ostream& operator<<(std::ostream& os, environment_ptr env) {
-         for (const auto& kv: env->expressions) {
-             os << "\t:" << kv.first << " " << kv.second << "\n";
-         }
-         if ( env->outer != nullptr) {
-             os << env->outer << "\n";
-         }
+    EnvironmentPtr Environment::getOuterScope() {
+        return outer;
+    }
+
+    std::ostream& operator<<(std::ostream& os, EnvironmentPtr env) {
+        for (const auto& kv: env->definitions) os << "\t:" << kv.first << " :" << kv.second << "\n";
+        if ( env->outer != nullptr ) {
+            os << env->outer << "\n";
+        }
         return os;
     }
 

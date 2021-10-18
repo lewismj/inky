@@ -9,20 +9,20 @@
 
 
 #include "test_util.h"
-
+#include "builtin.h"
 
 TEST_CASE("builtin list primitives","[basic-list-1]") {
-    using namespace inky;
+    using namespace Inky::Lisp;
 
-    environment_ptr e(new environment());
-    builtin::add_builtin_functions(e);
+    EnvironmentPtr e(new Environment());
+    addBuiltinFunctions(e);
 
-    std::initializer_list<test_case> tests  = {
-            { "eval (head [10 9 8 7])", value::type::Integer, 10 },
-            { "eval [+ 10 1]", value::type::Integer, 11},
-            { "eval (head (tail [1 2 3 4]))", value::type::Integer, 2},
-            { "eval (head (list 1 2 3 4))", value::type::Integer, 1}
+    std::initializer_list<TestCase> tests  = {
+            { "eval (head [10 9 8 7])", Type::Integer, 10 },
+            { "eval [+ 10 1]", Type::Integer, 11},
+            { "eval (head (tail [1 2 3 4]))", Type::Integer, 2},
+            { "eval (head (list 1 2 3 4))", Type::Integer, 1}
     };
 
-    verify_test_cases(e,tests);
+    verifyTestCases(e, tests);
 }

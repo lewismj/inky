@@ -2,45 +2,59 @@
 
 #include <ostream>
 #include <unordered_map>
-#include <string>
-#include "types.h"
+#include <ostream>
 
+#include "either.h"
+#include "value.h"
 
-namespace inky {
+namespace Inky::Lisp {
 
-    class value; /* forward declaration of value, lisp value. */
+    /*
+     * An environment represents the set of definitions within a given scope.
+     * Each environment contains a pointer to the parent outer scope.
+     */
 
-    /* An environment represents the set of expressions/definitions
-     * within a scope. */
-    class environment {
-    public:
-        environment() = default;
-        ~environment() = default;
+   class Environment {
+   public:
+       Environment() = default;
+       ~Environment() = default;
 
-        /* returns the value* associated with the name, or nullptr if not exists. */
-        value_ptr lookup(const std::string &name);
+      /* Returns the ValuePtr associated with the name, or nullptr if it doesn't exist. */
+      ValuePtr lookup(const std::string& name) const;
 
-        /* insert a value for a given name. */
-        void insert(const std::string& name, value_ptr value);
+      /* Insert a value for a given name. */
+      void insert(const std::string& name, ValuePtr value);
 
-        /* insert a value for a given name in the outermost environment scope,
-         * that this environment has access to. */
-        void insert_global(const std::string& name, value_ptr value);
+      /*
+       * Insert into global scope. Insert the symbol into the outermost scope that this
+       * environment refers to.
+       */
+      void insertGlobal(const std::string& name, ValuePtr value);
 
-        /* set the outer cope of this environment. */
-        void set_outer_scope(environment_ptr e);
+      /* Set the outer scope of this environment. */
+      void setOuterScope(EnvironmentPtr env);
 
-        environment_ptr get_outer_scope() { return outer; }
+      /* Returns the outer scope of this environment. */
+      EnvironmentPtr getOuterScope();
 
-        friend std::ostream& operator<<(std::ostream& os, environment_ptr env);
+      friend std::ostream& operator<<(std::ostream& os, EnvironmentPtr env);
 
-    private:
-        /* hash map of values in the environment; the environment manages the ownership of values. */
-        std::unordered_map<std::string, value_ptr > expressions;
+   private:
 
-        /* the outer environment. */
-        environment_ptr outer;
-    };
+       /*
+        * Return the outermost scope of this environment;
+        * n.b. Does NOT return shared_ptr to this, if 'this' is the global scope;
+        * returns nullptr.
+        */
+       EnvironmentPtr getGlobalScope();
 
-    std::ostream& operator<<(std::ostream& os, environment_ptr env);
+   private:
+       /* An unordered map from symbol name to its Value. */
+       std::unordered_map<std::string, ValuePtr> definitions;
+
+      /* The outer environment. */
+      EnvironmentPtr outer;
+   };
+
+   std::ostream& operator<<(std::ostream& os, EnvironmentPtr env);
 }

@@ -1,191 +1,168 @@
 #include <cmath>
 #include <iterator>
-#include <regex>
 #include <sstream>
 #include <string>
 
+#include "either.h"
 #include "value.h"
 #include "parser.h"
 
 
-namespace inky {
+namespace Inky::Lisp {
 
     /*
-     * Notes:
-     *   1. Flex/Bison introduce some build complexity for simple s-expression grammar?
-     *   2. Haskell's Parsec style combinator would be ideal.
-     *   3. C++ parser combinator like Spirit; not suitable - cumbersome, template/macro obfuscation etc.
-     *      Offers nothing better than Flex/Yacc in terms of maintenance.
-     *   4. Use utf8proc to make unicode compatible.
-     *
-     *  todo:
-     *   Next step; either convert to Flex/Bison? (can handle 'any' CFG, does -not- have to be LR(1).
-     *            ; find simpler (or at least smaller!) parser combinator than boost spirit.
-     *
-     *  todo:
-     *   Or, since the 'programs' are very small, just have two steps 'generate lexemes' and 'parse tokens'.
-     *   the 'parse tokens' becomes more readable (See header file) at the cost of reading all the input in
-     *   one go, rather that via the iterator...
+     * Simple recursive descent parser; the parse errors could be enriched with
+     * location information (since we know the position in the input string
+     * where the error occurs). This could be done with use of a 'proper' repl:
+     * readline/edit-line library.
      */
-
-    /* Implements simple recursive descent parser (&lexer); this looks like it was bashed
-     * out in a hurry (it was), see notes above... */
-    class parser {
+    class Parser {
     public:
-        explicit parser(std::string_view input) : b(input.begin()), i(input.begin()), e(input.end()) {}
-        ~parser() = default;
+       explicit Parser(std::string_view in) : input(in), i(in.begin()) {}
+       ~Parser() = default;
 
-        either<error,value_ptr> parse() { return read_expr(false,'\0'); }
+       Either<Error,ValuePtr> parse() { return readExpressionType(Type::SExpression,'\0'); }
 
     private:
 
-        void skip_whitespace() { /* skip over any whitespace or comments. */
-            while (std::isspace(*i) &&  *i != '\0' && i != e) {
+        /* Move one character along the input, provided we're not at the end of the input. */
+        void move() {
+           if ( i != input.end() ) ++i;
+        }
+
+        bool isNumeric() {
+            return (std::isdigit(*i)  || ( (*i == '+'|| *i=='-') && std::isdigit(*(i+1))));
+        }
+
+        bool isSymbol() {
+            return std::strchr( "abcdefghijklmnopqrstuvwxyz"
+                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                "0123456789_+-*\\/=<>!&", *i);
+        }
+
+        void skipWhitespace() {
+            while (i != input.end() && *i != '\0' && std::isspace(*i))  {
                 if (*i == ';') {
-                    while (*i != '\n' && *i != '\0') i++;
+                    while (i != input.end() && *i != '\n' && *i != '\0') move();
                     return;
                 }
-                ++i;
+                move();
             }
         }
 
-        either<error,value_ptr> read_value() {  /* read the next value. */
-            skip_whitespace();
+        Either<Error,ValuePtr> readValue() {
+            skipWhitespace();
 
-            /* when we read the expression, value, etc.. we don't return
-             * immediately, since we want to remove whitespace after the read too. */
-            either<error,value_ptr > rtn = value_ptr(nullptr);
+            if (i == input.end()) {
+                size_t position = std::distance(input.begin(),i-1);
+                return Error {"expecting token but reach end of input.", Error::Location { position, 1}};
+            }
 
-            if ( i == e) {
-                size_t position = std::distance(b,i-1);
-                return error { "Expecting token, reached end of input:",
-                               location { position, 1} };
-            }
-            if ( *i == '(') { /* s-expression. */
-                ++i;
-                bool is_quoted=false;
-                rtn = read_expr(is_quoted,')');
-            }
-            else if ( *i == '\'') {
-                ++i;
-                skip_whitespace();
-                if ( *i == '(' ) {
-                    ++i;
-                    /* if previous was [] then this () will be a qexpression. */
-                    rtn = read_expr(true,')');
-                }
-                else {
-                    size_t position = std::distance(b,i-1);
-                    return left(error {"Expecting '(' after quote:",
-                                       location { position, 2 }});
-                }
-            }
-            else if (*i == '[')  { /* alternative syntax for quoted expressions/lambdas/functions...*/
-                ++i;
-                rtn = read_expr(true,']');
-            }
-            else if ( *i == '\"')  {
-                rtn = read_string_literal();
-            } /* +-[0-9] is number; + n ; symbol number.; number is int if atoi = atof; i.e. modf = 0.0 */
-            else if (std::isdigit(*i)  || ( (*i == '+'|| *i=='-') && std::isdigit(*(i+1)))) {
-                /* ? could check that number literal isn't in position of operator; or allow e.g. '+2' as an
-                 * symbol/operator that could be bound itself... ? */
-                double sign = 1;
-                if ( (*i == '+' ||  *i == '-')) {
-                    sign = *i == '+' ? 1 : -1;
-                    ++i;
-                }
-                double val = 0.0;
-                double power = 0.0;
+            Either<Error,ValuePtr> rtn(nullptr);
 
-                /* Only read valid number; i.e. 2a is considered two tokens 2 and 'a';
-                 * can't have identifier 2a etc. */
-                for (val = 0.0; std::isdigit(*i);i++) val = 10.0 * val + ( *i - '0');
-                if (*i == '.') i++;
-                for (power = 1.0; std::isdigit(*i);i++) {
-                    val = 10.0 * val + (*i  - '0');
-                    power *= 10.0;
-                }
-                val = sign * val/power;
-                double n = 0;
-                double frac = std::modf(val,&n);
-                if (frac == 0.0) { /* exactly zero => long. */
-                    rtn = value_ptr(new value ( (long) val));
-                } else {
-                    rtn = value_ptr(new value(val));
-                }
+            if (*i == '(') {
+                move();
+                rtn = readExpressionType(Type::SExpression,')');
             }
-            else if (strchr( "abcdefghijklmnopqrstuvwxyz"
-                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                "0123456789_+-*\\/=<>!&", *i)) {
-                rtn = read_symbol();
+            else if (*i =='[') {
+                move();
+                rtn = readExpressionType(Type::QExpression,']');
+            }
+            else if (*i == '\"') {
+                move();
+                rtn = readStringLiteral();
+            }
+            else if (isNumeric()) {
+                rtn = readNumericValue();
+            }
+            else if (isSymbol()) {
+                rtn = readSymbol();
             }
             else {
-                size_t position = std::distance(b, i);
-                return error{"Mismatched expression:", location{position, 1}};
+                size_t position =  std::distance(input.begin(),i);
+                return Error { "mismatched expression.", Error::Location { position , 1}};
             }
 
-            skip_whitespace();
+            skipWhitespace();
 
             return rtn;
         }
 
-        either<error,value_ptr> read_expr(bool is_quoted, char end_ch) { /* read an s-expression or quoted s-expression. */
-            value* val = is_quoted ? new value(value::type::QExpression) : new value(value::type::SExpression);
-            while (*i != end_ch) { /* keep reading values ... */
-                auto j = read_value();
-                if ( j.is_right() ) {
-                    val->insert(j.right_value());
-                } else {
-                    delete val;
-                    return j.left_value();
-                }
+        Either<Error,ValuePtr> readExpressionType(Type kind, char end_ch) {
+            ExpressionPtr expression = std::make_shared<Expression>(Expression());
+            while ( *i != end_ch) {
+                auto j = readValue();
+                if (j) expression->insert(j.right()); else return j.left();
             }
-            ++i;
-            return value_ptr(val);
+            move();
+            return kind == Type::SExpression ?
+                Ops::makeSExpression(expression) : Ops::makeQExpression(expression);
         }
 
-        either<error,value_ptr> read_symbol() {
+        Either<Error,ValuePtr> readSymbol() {
             std::ostringstream os;
             while (strchr( "abcdefghijklmnopqrstuvwxyz"
-                                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                "0123456789_+-*\\/=<>!&", *i) && *i != '\0') {
-               os << *i;
-               ++i;
+                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                           "0123456789_+-*\\/=<>!&", *i) && *i != '\0') {
+                os << *i;
+                move();
             }
-
-            return value_ptr(new value(os.str()));
+            return Ops::makeSymbol(os.str());
         }
 
-        either <error,value_ptr> read_string_literal() { /* read string literal. */
-            ++i; /* move onto the string. */
-            std::string_view::const_iterator s = i; /* mark start of string, if we error. */
+        /* Read string literal. */
+        Either <Error,ValuePtr> readStringLiteral() {
+            std::string_view::const_iterator s = i;
             std::ostringstream os;
-            while ( *i != '\"') {
-                if ( *i == '\0' ) { /* reached eol before end quote. */
-                    size_t start = std::distance(b, s);
-                    size_t distance = std::distance(b, i) - start;
-                    location loc{start, distance};
-                    return error{"String literal not terminated:", loc};
+            while ( i!= input.end() && *i != '\"') {
+                if ( *i == '\0' ) {
+                    size_t start = std::distance(input.begin(), s);
+                    size_t distance = std::distance(input.begin(), i) - start;
+                    Error::Location l { start, distance };
+                    return Error { "string literal not terminated", l };
                 }
                 os << *i;
-                i++;
+                move();
             }
-            i++;
-            std::string literal(os.str());
-            return value_ptr(new value(literal,true));
+            move();
+            return Ops::makeString(os.str());
+        }
+
+        /* Read an integer or double. */
+        Either<Error,ValuePtr> readNumericValue() {
+            /* Simplistic, we should hold 'val' as an unsigned long until (or if) we reach '.' or exponent etc.. */
+            double sign = 1;
+            if ((*i == '+' || *i == '-')) {
+                sign = *i == '+' ? 1 : -1;
+                move();
+            }
+            double val = 0.0;
+            double power = 0.0;
+
+            for (val = 0.0; std::isdigit(*i); move()) val = 10.0 * val + (*i - '0');
+            if (*i == '.') move();
+            for (power = 1.0; std::isdigit(*i); move()) {
+                val = 10.0 * val + (*i - '0');
+                power *= 10.0;
+            }
+            val = sign * val / power;
+            double n = 0;
+            double frac = std::modf(val, &n);
+            if (frac == 0.0) { /* exactly zero => long. */
+                return Ops::makeInteger((long) val);
+            } else {
+                return Ops::makeDouble(val);
+            }
         }
 
     private:
-        std::string_view::const_iterator b;  /* the beginning of the input. */
-        std::string_view::const_iterator i;  /* current position in the input view. */
-        std::string_view::const_iterator e;  /* the end of the input view. */
+        std::string_view input;
+        std::string_view::const_iterator i;
     };
 
 
-    /* Invoke the parser; recursive descent. */
-    either<error,value_ptr> parse(std::string_view input) {
-        parser p(input);
+    Either<Error,ValuePtr> parse(std::string_view input) {
+        Parser p(input);
         return p.parse();
     }
 

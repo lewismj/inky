@@ -1,115 +1,185 @@
 #include <iterator>
-#include "value.h"
+
 #include "environment.h"
+#include "value.h"
 
-namespace inky {
 
-    void value::insert(value_ptr v) {
-        cells.push_back(v);
+namespace Inky::Lisp {
+
+
+    void Expression::insert(ValuePtr value) {
+        cells.push_back(value);
     }
 
-    void value::move(value_ptr v) {
-        std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
-    }
-
-    value_ptr value::clone() {
-        value_ptr rtn(new value(kind));             /* copy the kind. */
-
-        /* clone the cells. */
-        for (const auto& cell: cells) rtn->cells.push_back(cell->clone());
-
-        /* clone the var... */
-        if ( kind != value::type::Function )  { /* if not a lambda, just copy. */
-            rtn->var = var;
-        } else {
-            /* clone the lambda. */
-            lambda_ptr lambda = std::get<lambda_ptr>(var);
-            lambda_ptr copy(new value::lambda());
-
-            copy->formals = lambda->formals->clone();
-            copy->body = lambda->body->clone();
-            //copy->env = lambda->env; /* don't copy, refer to same scope. */
-            copy->env->set_outer_scope(lambda->env->get_outer_scope());
-
-            rtn->var = copy;
+    void Expression::move(ValuePtr value) {
+        if (value->kind == Type::SExpression || value->kind == Type::QExpression) {
+            ExpressionPtr v = std::get<ExpressionPtr>(value->var);
+            std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
         }
-
-        return rtn;
     }
 
-    /* Utility, useful for debugging etc. */
-    std::ostream& to_expression_str(std::ostream& os, const value_ptr& v) {
-        if (v->kind == value::type::QExpression) os << "[";
-        else os << "(";
-        for (const auto& cell: v->cells) {
-            if (&cell != &v->cells[0]) os << " ";
-            os << cell;
+    ValuePtr Value::clone() {
+        switch (kind) {
+            case Type::Function: {
+                LambdaPtr copy(new Lambda());
+                LambdaPtr lambda = std::get<LambdaPtr>(var);
+
+                copy->formals = lambda->formals->clone();
+                copy->body = lambda->body->clone();
+
+
+                return Ops::makeFunction(copy);
+            }
+
+            case Type::SExpression:
+            case Type::QExpression: {
+                ExpressionPtr copy = std::make_shared<Expression>(Expression());
+                ExpressionPtr expression = std::get<ExpressionPtr>(var);
+                for (const auto& cell: expression->cells) copy->cells.push_back(cell->clone());
+
+                ValuePtr v = kind == Type::QExpression ?
+                            Ops::makeQExpression(copy) : Ops::makeSExpression(copy);
+                return v;
+            }
+
+            case Type::Integer:
+            case Type::Double:
+            case Type::String:
+            case Type::Symbol:
+            case Type::BuiltinFunction:
+                return std::make_shared<Value>(Value{kind, var});
         }
-        if (v->kind == value::type::QExpression) os << "]";
-        else os << ")";
-        return os;
     }
 
-    std::ostream& operator<<(std::ostream& os, const value_ptr value) {
+    std::ostream& operator<<(std::ostream& os, ValuePtr value) {
         switch (value->kind) {
-            case value::type::String:
-                os << "\"" << std::get<std::string>(value->var) << "\"";
-                break;
-            case value::type::Symbol:
-                os << std::get<std::string>(value->var);
-                break;
-            case value::type::Integer:
+            case Type::Integer:
                 os << std::get<long>(value->var);
                 break;
-            case value::type::Double:
+            case Type::Double:
                 os << std::get<double>(value->var);
                 break;
-            case value::type::BuiltinFunction:
+            case Type::String:
+                os << '\"' << std::get<std::string>(value->var) << '\"';
+                break;
+            case Type::Symbol:
+                os << std::get<std::string>(value->var);
+                break;
+            case Type::BuiltinFunction:
                 os << "<builtin>";
                 break;
-            case value::type::Function:
-            case value::type::SExpression:
-            case value::type::QExpression:
-                return to_expression_str(os, value);
+            case Type::Function:
+                os << std::get<LambdaPtr>(value->var);
+                break;
+            case Type::QExpression:
+                os << "[" << std::get<ExpressionPtr>(value->var) << "]";
+                break;
+            case Type::SExpression:
+                os << "(" << std::get<ExpressionPtr>(value->var) << ")";
+                break;
         }
         return os;
     }
 
-    std::ostream& operator<<(std::ostream& os, const value::type kind) {
+    std::ostream& operator<<(std::ostream& os, Type kind) {
         switch (kind) {
-            case value::type::String:
-                os << "<string>";
-            case value::type::Integer:
+            case Type::Integer:
                 os << "<integer>";
                 break;
-            case value::type::Double:
+            case Type::Double:
                 os << "<double>";
                 break;
-            case value::type::Symbol:
+            case Type::String:
+                os << "<string>";
+                break;
+            case Type::Symbol:
                 os << "<symbol>";
                 break;
-            case value::type::BuiltinFunction:
+            case Type::QExpression:
+                os << "<QExpression>";
+                break;
+            case Type::BuiltinFunction:
                 os << "<builtin>";
                 break;
-            case value::type::Function:
+            case Type::Function:
                 os << "<function>";
                 break;
-            case value::type::SExpression:
+            case Type::SExpression:
                 os << "<sexpression>";
                 break;
-            case value::type::QExpression:
-                os << "<qexpression>";
-                break;
         }
-
         return os;
     }
 
-    std::ostream& operator<<(std::ostream& os, value::lambda_ptr lambda) {
-       os << "lambda:\n";
-       os << "\tformals:" << lambda->formals << "\n";
-       os << "\tbody:" << lambda->body << "\n";
-       return os;
+    std::ostream& operator<<(std::ostream& os, LambdaPtr l) {
+        os << "lambda:\n";
+        os << "\tformals:" << l->formals << "\n";
+        os << "\tbody:" << l->body << "\n";
+        return os;
     }
 
-};
+    std::ostream& operator<<(std::ostream& os, ExpressionPtr e) {
+        for (const auto& cell: e->cells) {
+            if (& cell != &e->cells[0]) os << " ";
+            os << cell;
+        }
+        return os;
+    }
+
+    /* Useful for debug, but use fmt in REPL. */
+    std::ostream& operator<<(std::ostream& os, Error e) {
+        os << e.message << "\n";
+        return os;
+    }
+
+    namespace Ops {
+
+        ValuePtr makeInteger(const long& l) {
+            return std::make_shared<Value>(Value { Type::Integer, l});
+        }
+
+        ValuePtr makeDouble(const double& d) {
+            return std::make_shared<Value>(Value {Type::Double, d}) ;
+        }
+
+        ValuePtr makeString(const std::string& s) {
+            return std::make_shared<Value>(Value { Type::String, s});
+        }
+
+        ValuePtr makeSymbol(const std::string& s) {
+            return std::make_shared<Value>(Value { Type::Symbol, s});
+        }
+
+        ValuePtr makeBuiltin(const BuiltinFunction& f) {
+            return std::make_shared<Value>(Value {Type::BuiltinFunction, f});
+        }
+
+        ValuePtr makeFunction(LambdaPtr lambda) {
+            return std::make_shared<Value>(Value {Type::Function, lambda});
+        }
+
+        ValuePtr makeSExpression(ExpressionPtr expression) {
+            //ExpressionPtr expression = std::make_shared<Expression>(Expression());
+            return std::make_shared<Value>(Value { Type::SExpression, expression});
+        }
+
+        ValuePtr makeSExpression() {
+            ExpressionPtr expression = std::make_shared<Expression>(Expression());
+            return std::make_shared<Value>(Value { Type::SExpression, expression});
+        }
+
+        ValuePtr makeQExpression(ExpressionPtr expression) {
+            //ExpressionPtr expression = std::make_shared<Expression>(Expression());
+            return std::make_shared<Value>(Value { Type::QExpression, expression});
+        }
+
+        ValuePtr makeQExpression() {
+            ExpressionPtr expression = std::make_shared<Expression>(Expression());
+            return std::make_shared<Value>(Value { Type::QExpression, expression});
+        }
+
+
+    }
+
+
+}
