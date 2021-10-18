@@ -272,15 +272,86 @@ namespace Inky::Lisp {
     auto builtin_gt = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {gt<long>,gt<double>});};
     auto builtin_gte = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {gte<long>,gte<double>});};
 
-    /* test, numeric only. */
-    auto builtin_eq= [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {eq<long>,eq<double>});};
-    auto builtin_neq= [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {neq<long>,neq<double>});};
 
 
     auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      { return builtin_op(e,v, { add<long>, add<double> }); };
     auto builtin_subtract = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { subtract<long>, subtract<double> }); };
     auto builtin_divide = [](EnvironmentPtr e, ValuePtr v)   { return builtin_op(e,v, { divide<long>, divide<double> }); };
     auto builtin_multiply = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { multiply<long>, multiply<double> }); };
+
+    bool equals(ValuePtr a, ValuePtr b) {
+        /*
+         * For numeric types, check if they are numerically the same.
+         * So, cast from long to double if necessary.
+         */
+        if (a->isNumeric() && b->isNumeric()) {
+            if (a->kind == Type::Double || b->kind == Type::Double) {
+               double v1 = a->kind == Type::Integer ? (double) std::get<long>(a->var) : std::get<double>(a->var);
+               double v2 = b->kind == Type::Integer ? (double) std::get<long>(b->var) : std::get<double>(b->var);
+               return v1 == v2;
+            } else {
+                long v1 = std::get<long>(a->var);
+                long v2 = std::get<long>(b->var);
+                return v1 == v2;
+            }
+        } else if ( a->kind != b->kind) {
+            return false;
+        }
+
+       switch (a->kind) {
+            case Type::Integer:
+            case Type::Double:
+                return true; /* Case dealt with above, added to avoid compiler warning. */
+           case Type::String:
+               return std::get<std::string>(a->var) == std::get<std::string>(b->var);
+           case Type::Symbol:
+               return std::get<std::string>(a->var) == std::get<std::string>(b->var);
+           case Type::BuiltinFunction:
+               return false; /* change this to check the address.*/
+           case Type::Function: {
+               LambdaPtr xs = std::get<LambdaPtr>(a->var);
+               LambdaPtr ys = std::get<LambdaPtr>(b->var);
+               return equals(xs->formals,ys->formals) && equals(xs->body, ys->body);
+           }
+           case Type::SExpression:
+           case Type::QExpression: {
+               ExpressionPtr xs = std::get<ExpressionPtr>(a->var);
+               ExpressionPtr ys = std::get<ExpressionPtr>(b->var);
+               if (xs->cells.size() != ys->cells.size()) return false;
+               for (size_t i = 0; i < xs->cells.size(); i++) {
+                   if (!equals(xs->cells[0], ys->cells[0])) return false;
+               }
+               return true;
+           }
+       }
+
+       return false;
+    }
+
+
+    bool notEquals(ValuePtr a, ValuePtr b) { return ! equals(a,b); }
+
+    Either<Error,ValuePtr> builtin_eq(EnvironmentPtr e, ValuePtr a) {
+        if ( !a->isExpression() ) return Error {"eq expecting an expression."};
+        ExpressionPtr xs = std::get<ExpressionPtr>(a->var);
+        if ( xs->cells.size() != 2) return Error {"eq operator expecting two arguments."};
+
+        ValuePtr x = xs->cells[0];
+        ValuePtr y = xs->cells[1];
+
+        return  equals(x,y) ? Ops::makeInteger(1) : Ops::makeInteger(0);
+    }
+
+    Either<Error,ValuePtr> builtin_neq (EnvironmentPtr e, ValuePtr a) {
+        if ( !a->isExpression() ) return Error {"neq expecting an expression."};
+        ExpressionPtr xs = std::get<ExpressionPtr>(a->var);
+        if ( xs->cells.size() != 2) return Error {"neq operator expecting two arguments."};
+
+        ValuePtr x = xs->cells[0];
+        ValuePtr y = xs->cells[1];
+
+        return  notEquals(x,y) ? Ops::makeInteger(1) : Ops::makeInteger(0);
+    }
 
     /* If. */
     Either<Error,ValuePtr> builtin_if(EnvironmentPtr e, ValuePtr v) {
@@ -317,7 +388,7 @@ namespace Inky::Lisp {
                 {"tail", builtin_tail},
                 { "eval", builtin_eval},
                 {"join", builtin_join},
-                { "+",builtin_add}, /* Basic numeric, useful only with bootstrapping in Prelude. */
+                { "+",builtin_add},
                 { "-",builtin_subtract},
                 { "/",builtin_divide},
                 {"*",builtin_multiply},
@@ -325,8 +396,8 @@ namespace Inky::Lisp {
                 {"<=",builtin_lte},
                 { ">",builtin_gt},
                 {">=",builtin_gte},
-                {"==",builtin_eq}, /* Should change to recur on types, compare Q Expression values etc. */
-                {"!=",builtin_neq}, /* As above. */
+                {"==",builtin_eq},
+                {"!=",builtin_neq},
                 {"if",builtin_if}
         };
 
