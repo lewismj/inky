@@ -5,7 +5,7 @@ Greenspun’s tenth rule
 ### Summary
 This project is an implementation of Greenspun’s tenth rule. It is not meant to be a full featured Lisp.
 
-There are a number of small Lisp interpreters available, two that I came across are interesting as they take different approaches.
+There are a number of small Lisp interpreters available. These two are interesting, they take different approaches.
 
 1. [Build our Own Lisp][1] 2. [Wisp][2]
 
