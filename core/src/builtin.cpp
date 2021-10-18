@@ -79,6 +79,13 @@ namespace Inky::Lisp {
         return builtin_define(e,a,true);
     }
 
+
+    Either<Error,ValuePtr> builtin_put(EnvironmentPtr e, ValuePtr a) {
+        return builtin_define(e,a,false);
+    }
+
+
+
     Either<Error,ValuePtr> builtin_list(EnvironmentPtr , ValuePtr a) {
         a->kind = Type::QExpression;
         return a;
@@ -256,10 +263,18 @@ namespace Inky::Lisp {
     template<typename T> bool gt(const T& a, const T& b) { return a > b;}
     template<typename T> bool gte(const T& a, const T& b) { return a >= b;}
 
+    /* numeric only. */
+    template<typename T> bool eq(const T& a, const T& b) { return a == b;}
+    template<typename T> bool neq(const T& a, const T& b)  { return a != b; }
+
     auto builtin_lt = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {lt<long>,lt<double>});};
     auto builtin_lte = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {lte<long>,lte<double>});};
     auto builtin_gt = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {gt<long>,gt<double>});};
     auto builtin_gte = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {gte<long>,gte<double>});};
+
+    /* test, numeric only. */
+    auto builtin_eq= [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {eq<long>,eq<double>});};
+    auto builtin_neq= [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {neq<long>,neq<double>});};
 
 
     auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      { return builtin_op(e,v, { add<long>, add<double> }); };
@@ -267,26 +282,52 @@ namespace Inky::Lisp {
     auto builtin_divide = [](EnvironmentPtr e, ValuePtr v)   { return builtin_op(e,v, { divide<long>, divide<double> }); };
     auto builtin_multiply = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { multiply<long>, multiply<double> }); };
 
+    /* If. */
+    Either<Error,ValuePtr> builtin_if(EnvironmentPtr e, ValuePtr v) {
+        if ( !v->isExpression() ) return Error {"if statement not of form 'if (exp) [exp1] [exp2]'"};
+        ExpressionPtr xs = std::get<ExpressionPtr>(v->var);
+        if ( xs->cells.size() != 3) return Error {" if statement missing argument."};
+
+        ValuePtr cond = xs->cells[0];
+        ValuePtr exp1 = xs->cells[1];
+        ValuePtr exp2 = xs->cells[2];
+
+        if (cond->kind != Type::Integer) return Error {"if condition must return true or false."};
+        if (exp1->kind != Type::QExpression) return Error {"true condition of if, not list expression type."};
+        if (exp2->kind != Type::QExpression) return Error {"false condition of it, not list expression type."};
+
+        /* Now set them to SExpression for eval. */
+        exp1->kind = Type::SExpression;
+        exp2->kind = Type::SExpression;
+
+        long result = std::get<long>(cond->var);
+        if (result) return eval(e,exp1);
+        else return eval(e,exp2);
+    }
 
     void addBuiltinFunctions(EnvironmentPtr env) {
         std::initializer_list<std::pair<std::string,BuiltinFunction>> builtins = {
                 { "lambda", builtin_lambda},
                 { "define", builtin_def},
                 { "def", builtin_def},
+                {"=",builtin_put},
                 {"\\", builtin_lambda},
                 { "list", builtin_list },
                 { "head", builtin_head},
                 {"tail", builtin_tail},
                 { "eval", builtin_eval},
                 {"join", builtin_join},
-                { "+",builtin_add},
+                { "+",builtin_add}, /* Basic numeric, useful only with bootstrapping in Prelude. */
                 { "-",builtin_subtract},
                 { "/",builtin_divide},
                 {"*",builtin_multiply},
                 {"<",builtin_lt},
                 {"<=",builtin_lte},
                 { ">",builtin_gt},
-                {">=",builtin_gte}
+                {">=",builtin_gte},
+                {"==",builtin_eq}, /* Should change to recur on types, compare Q Expression values etc. */
+                {"!=",builtin_neq}, /* As above. */
+                {"if",builtin_if}
         };
 
         for (const auto& kv: builtins ) {
