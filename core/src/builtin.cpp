@@ -122,6 +122,27 @@ namespace Inky::Lisp {
         return eval(e, xs);
     }
 
+    Either<Error,ValuePtr> builtin_join(EnvironmentPtr e, ValuePtr a) {
+        if (!a->isExpression()) return Error {"argument to join function must be list expression."};
+        ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
+        if (expression->cells.empty()) return a;
+
+        ExpressionPtr xs(new Expression());
+
+        while (!expression->cells.empty()) {
+            ValuePtr ys = expression->cells[0]; expression->cells.pop_front();
+            if ( ys->isExpression() ) {
+                ExpressionPtr zs = std::get<ExpressionPtr>(ys->var);
+                while ( !zs->cells.empty())  {
+                   xs->cells.push_back(zs->cells[0]);
+                   zs->cells.pop_front();
+                }
+            }
+        }
+
+        return Ops::makeQExpression(xs);
+    }
+
     /* Define some primitive numerical operations, enough so that Prelude can boostrap more... */
     using integer_op = std::function<long(const long&, const long&)>;
     using double_op  = std::function<double(const double&, const double&)>;
@@ -159,7 +180,7 @@ namespace Inky::Lisp {
 
         bool is_double = false;
         for (const auto &c : v->cells) {
-            if (!c->isNumeric()) return Error{"runtime_Error, +,-,/,* reduce non numeric."};
+            if (!c->isNumeric()) return Error{"runtime_error, +,-,/,* reduce non numeric."};
             if (c->kind == Type::Double) is_double = true;
         }
 
@@ -214,6 +235,7 @@ namespace Inky::Lisp {
                 { "head", builtin_head},
                 {"tail", builtin_tail},
                 { "eval", builtin_eval},
+                {"join", builtin_join},
                 { "+",builtin_add},
                 { "-",builtin_subtract},
                 { "/",builtin_divide},
