@@ -51,6 +51,23 @@ def eval(x, env=global_env):
         return proc(*args)
 ```
 
+### Design
+
+Central to the design are the following choices
+
+1. Use a discriminated union to hold S-Expression, i.e.
+```cpp
+std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> var;
+```
+
+In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
+
+2. Parsing. The parse is *very* basic, it is just dealing with S-Expressions. Having used [FastParse][4]in Scala; I decided to investigate Boost’s Spirit parser.  I gave up on the idea of using Boost’s Spirit parser …
+
+3. I’ve followed the ‘Build Your Own Lisp’ approach of ‘special syntax’ for Lambda expressions. If writing this again, I’d probably not bother and use the regular syntax (with modified *eval*).
+
+4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation. 
+
 ### Prelude
 
 The ‘Build Your Own Lisp’ approach is interesting as it allows you to bootstrap your environment from a very basic Prelude, for example:
@@ -62,3 +79,4 @@ def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp
 [3]:	https://norvig.com/lispy.html
+[4]:	https://github.com/com-lihaoyi/fastparse
