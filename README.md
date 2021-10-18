@@ -7,17 +7,16 @@ This project is an implementation of Greenspun’s tenth rule. It is not meant t
 
 There are a number of small Lisp interpreters available, two that I came across are interesting as they take different approaches.
 
-1. [Build our Own Lisp][1]
-2. [Wisp][2]
+1. [Build our Own Lisp][1] 2. [Wisp][2]
 
-The interesting difference between these approaches is how they deal with lambda functions.
+The interesting difference between these approaches is how they deal with lambda functions and macros.
 
-Typically, we have
+If you take a simple lambda expression:
 ```
 (lambda (x) (+ x 1))
 ```
 
-The question is how do evaluate it? In the ‘Build Your Own Lisp’ version, *lambda* is just a symbol in the environment who’s lookup is formals and body (which have a ‘quoted’ type to ensure they aren’t eagerly evaluated).
+In the ‘Build Your Own Lisp’ version, when evaluating S-Expressions, lambda and other functions are assigned a special ‘type’ so that they aren’t eagerly evaluated’. In that implementation **lambda** is itself a symbol (in global scope) that corresponds to a built-in function that creates a structure for holding an evaluated lambda.
 
 Other implementations tend not to do this, and have the *eval* function treat *lambda* as a ’special’ operation.
 
@@ -62,11 +61,17 @@ std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> va
 
 In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-2. Parsing. The parse is *very* basic, it is just dealing with S-Expressions. Having used [FastParse][4]in Scala; I decided to investigate Boost’s Spirit parser.  I gave up on the idea of using Boost’s Spirit parser …
+I’m not sure if I would follow this approach if I were building a full implementation. The cost (lots of `std::get` function calls to take a value out of the variant v.s. the benefit - no inheritance hierarchy, smaller codebase, in
+theory less memory.
 
-3. I’ve followed the ‘Build Your Own Lisp’ approach of ‘special syntax’ for Lambda expressions. If writing this again, I’d probably not bother and use the regular syntax (with modified *eval*).
+2. Parsing. The parse is *very* basic, it is just dealing with S-Expressions. Having used [FastParse][4] in Scala; I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
-4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation. 
+	Currently investigating smaller C++ Parser combinators.
+
+3. I’ve followed the ‘Build Your Own Lisp’ approach of ‘special syntax’ for Lambda expressions. If writing this again, I’d maybe use the regular syntax (with modified *eval*).
+
+4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation.  The codebase would be significantly smaller if the implementation were done in a language like Scala. C++ involves *lots* of boilerplate, with no type pattern matching etc.
+
 
 ### Prelude
 
@@ -77,7 +82,7 @@ def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ```
 
 ### Example Output
-
+Here is some output from my C++ solution:
 ```lisp
 λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ()
