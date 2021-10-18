@@ -76,6 +76,27 @@ The ‘Build Your Own Lisp’ approach is interesting as it allows you to bootst
 def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ```
 
+### Example Output
+
+```lisp
+λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
+()
+λ> defun [length xs] [ if (== xs nil) [0] [+ 1 (length (tail xs))]]
+()
+λ> length [a b c d]
+4
+λ> (+ (* 3 (+ (* 2 4) (+ 3 5))) (+ (- 10 7) 6))
+57
+λ> (def [foo] (lambda [x] [+ x 1]))
+()
+λ> (def [bar] (lambda [f x] [f x]))
+()
+2
+λ> bar foo 1
+2
+λ> 
+```
+
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp
 [3]:	https://norvig.com/lispy.html
