@@ -219,6 +219,49 @@ namespace Inky::Lisp {
         return Ops::makeInteger(std::get<long>(accumulator));
     }
 
+    using integer_cmp = std::function<bool(const long&, const long&)>;
+    using double_cmp  = std::function<bool(const double&, const double&)>;
+
+    struct numeric_cmp { integer_op  f; double_op   g; };
+
+    Either<Error,ValuePtr> builtin_cmp(EnvironmentPtr, ValuePtr a, numeric_cmp op) {
+        if (! a->isExpression() ) return Error { "expected expression  'cmp a b'"};
+        ExpressionPtr xs = std::get<ExpressionPtr>(a->var);
+        if ( xs->cells.size() != 2) return Error { "error cmp operator, expected 2 arguments."};
+
+        bool isDouble = false;
+        for (const auto& arg: xs->cells) {
+            if ( !arg->isNumeric() ) return Error { "error, cmp argument non-numeric."};
+            if ( arg->kind == Type::Double) isDouble = true;
+        }
+
+        bool result = false;
+        ValuePtr x = xs->cells[0];
+        ValuePtr y = xs->cells[1];
+        if (isDouble) {  /* one or more arguments is double, so cast any args to double. */
+            double fst = x->kind == Type::Integer ? (double) std::get<long>(x->var) : std::get<double>(x->var);
+            double snd = y->kind == Type::Integer ? (double) std::get<long>(y->var) : std::get<double>(y->var);
+            result = op.g(fst,snd);
+        } else {
+            long fst = std::get<long>(x->var);
+            long snd = std::get<long>(y->var);
+            result = op.f(fst,snd);
+        }
+
+        return result ? Ops::makeInteger(1) : Ops::makeInteger(0);
+    }
+
+    template<typename T> bool lt(const T& a, const T& b) { return a < b;}
+    template<typename T> bool lte(const T& a, const T& b) { return a <= b;}
+    template<typename T> bool gt(const T& a, const T& b) { return a > b;}
+    template<typename T> bool gte(const T& a, const T& b) { return a >= b;}
+
+    auto builtin_lt = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {lt<long>,lt<double>});};
+    auto builtin_lte = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {lte<long>,lte<double>});};
+    auto builtin_gt = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {gt<long>,gt<double>});};
+    auto builtin_gte = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {gte<long>,gte<double>});};
+
+
     auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      { return builtin_op(e,v, { add<long>, add<double> }); };
     auto builtin_subtract = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { subtract<long>, subtract<double> }); };
     auto builtin_divide = [](EnvironmentPtr e, ValuePtr v)   { return builtin_op(e,v, { divide<long>, divide<double> }); };
@@ -239,7 +282,11 @@ namespace Inky::Lisp {
                 { "+",builtin_add},
                 { "-",builtin_subtract},
                 { "/",builtin_divide},
-                {"*",builtin_multiply}
+                {"*",builtin_multiply},
+                {"<",builtin_lt},
+                {"<=",builtin_lte},
+                { ">",builtin_gt},
+                {">=",builtin_gte}
         };
 
         for (const auto& kv: builtins ) {
