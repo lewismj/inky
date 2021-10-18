@@ -96,7 +96,6 @@ Here is some output from my C++ solution:
 ()
 λ> (def [bar] (lambda [f x] [f x]))
 ()
-2
 λ> bar foo 1
 2
 λ> 
