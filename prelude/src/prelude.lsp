@@ -4,5 +4,8 @@
 ; defun - provide a way of defining functions as named lambda.
 def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 
-; example function
-defun [example-fn x y] [+ x y]
+; e.g. defun [example-fn x y] [+ x y]
+
+def [nil] []
+def [true] 1
+def [false] 0

@@ -89,7 +89,6 @@ namespace Inky::Lisp {
     };
 
     namespace Ops { /* Define utilities for constructing Values. */
-
         ValuePtr makeInteger(const long& l);
         ValuePtr makeDouble(const double& d);
         ValuePtr makeString(const std::string& s);
