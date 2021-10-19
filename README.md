@@ -11,12 +11,9 @@ There are a number of small Lisp interpreters available. These two are interesti
 
 The interesting difference between these approaches is how they deal with lambda functions and macros.
 
-If you take a simple lambda expression:
-```
-(lambda (x) (+ x 1))
-```
+In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system.  
 
-In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system.  If an expression has a type Q-Expression it won’t be eagerly evaluated. *lambda* itself is just a symbol in the global environment, whose value (S-Expression) happens to be a built-in function that is used to construct ‘Lambda’ structures.  
+If an expression has a type Q-Expression it won’t be eagerly evaluated. *lambda* itself is just a symbol in the global environment, whose value (S-Expression) happens to be a built-in function that is used to construct ‘Lambda’ structures.  
 
 There are pros-cons to the Q-Expression approach. It does lead to a very small subset of ‘built-in’ functions required( ‘*homoiconicity*’).  
 
