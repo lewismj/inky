@@ -79,9 +79,6 @@ namespace Inky::Lisp {
          */
         ValuePtr clone();
 
-        bool isNumeric() const { return kind == Type::Integer || kind == Type::Double; }
-        bool isExpression() const  { return kind == Type::SExpression || kind == Type::QExpression; }
-
         Type kind; /* Convenient flag for type checking. */
 
         /* The variant that the value can hold. */
@@ -99,6 +96,9 @@ namespace Inky::Lisp {
         ValuePtr makeSExpression();
         ValuePtr makeQExpression(ExpressionPtr expression);
         ValuePtr makeQExpression();
+
+        bool isNumeric(ValuePtr a);
+        bool isExpression(ValuePtr a);
     }
 
     /* Output operators. */

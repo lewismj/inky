@@ -21,33 +21,6 @@ Other implementations tend not to do this, and have the *eval* function treat *l
 
 The simplest example is from Peter Novig’s [How to write a Lisp interpreter in Python][3]
 
-```python
-
-
-class Procedure(object):
-    "A user-defined Scheme procedure."
-    def __init__(self, parms, body, env):
-        self.parms, self.body, self.env = parms, body, env
-    def __call__(self, *args): 
-        return eval(self.body, Env(self.parms, args, self.env))
-
-
-
-def eval(x, env=global_env):
-    "Evaluate an expression in an environment."
-    if isinstance(x, Symbol):      # variable reference
-        return env.find(x)[x]
-    elif not isinstance(x, List):  # constant literal
-        return x                
-....
-....
-....
-
-    else:                          # (proc arg...)
-        proc = eval(x[0], env)
-        args = [eval(exp, env) for exp in x[1:]]
-        return proc(*args)
-```
 
 ### Design
 
@@ -63,13 +36,11 @@ In a language like Haskell we would use a *sum* type. The choice in C++ is eithe
 I’m not sure if I would follow this approach if I were building a full implementation. The cost (lots of `std::get` function calls to take a value out of the variant v.s. the benefit - no inheritance hierarchy, smaller codebase, in
 theory less memory.
 
-2. Parsing. The parse is *very* basic, it is just dealing with S-Expressions. Having used [FastParse][4] in Scala; I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
+2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
-	Currently investigating smaller C++ Parser combinators.
+3. I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions. 
 
-3. I’ve followed the ‘Build Your Own Lisp’ approach of ‘special syntax’ for Lambda expressions. If writing this again, I’d maybe use the regular syntax (with modified *eval*).
-
-4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation.  The codebase would be significantly smaller if the implementation were done in a language like Scala. C++ involves *lots* of boilerplate, with no type pattern matching etc.
+4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation.  There is not too much code, but would be less if done using say Scala.
 
 5. In this codebase I’ve made no attempt at any tail call optimisation.
 
@@ -83,6 +54,7 @@ def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 
 ### Example Output
 Here is some output from my C++ solution:
+
 ```lisp
 λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ()
@@ -110,9 +82,9 @@ Here is some output from my C++ solution:
 ()
 λ> defun [sum l] [foldl + 0 l]
 ()
-λ> sum [ 1 2 3 4 5 6 7 8 9 10]
+λ> sum [1 2 3 4 5 6 7 8 9 10]
 55
-λ> 
+λ> :q
 ```
 
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp

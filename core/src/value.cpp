@@ -178,8 +178,8 @@ namespace Inky::Lisp {
             return std::make_shared<Value>(Value { Type::QExpression, expression});
         }
 
+        bool isNumeric(ValuePtr a) { return a->kind == Type::Integer || a->kind == Type::Double; }
 
+        bool isExpression(ValuePtr a) { return a->kind == Type::SExpression || a->kind == Type::QExpression; }
     }
-
-
 }

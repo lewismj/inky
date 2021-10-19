@@ -14,7 +14,7 @@ void verifyTestCases(Inky::Lisp::EnvironmentPtr e, std::initializer_list<TestCas
         REQUIRE(result.isRight());
         if (result.isRight()) {
             Inky::Lisp::ValuePtr val = result.right();
-            REQUIRE(val->isNumeric());
+            REQUIRE(Ops::isNumeric(val));
             REQUIRE(val->kind == test.kind);
             if (val->kind == Type::Integer) {
                 REQUIRE(std::get<long>(val->var) == std::get<long>(test.result));
