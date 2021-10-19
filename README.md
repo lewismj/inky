@@ -98,6 +98,14 @@ Here is some output from my C++ solution:
 ()
 λ> bar foo 1
 2
+λ> defun [fst xs] [ eval (head xs) ]
+()
+λ> defun [foldl f z l] [if (== l nil) [z] [foldl f (f z (fst l)) (tail l)]]
+()
+λ> defun [sum l] [foldl + 0 l]
+()
+λ> sum [ 1 2 3 4 5 6 7 8 9 10]
+55
 λ> 
 ```
 
