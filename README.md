@@ -86,6 +86,12 @@ Here is some output from my C++ solution:
 ```lisp
 λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ()
+λ> def [nil] []
+()
+λ> def [true] 1
+()
+λ> def [false] 0
+()
 λ> defun [length xs] [if (== xs nil) [0] [+ 1 (length (tail xs))]]
 ()
 λ> length [a b c d]
