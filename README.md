@@ -16,7 +16,9 @@ If you take a simple lambda expression:
 (lambda (x) (+ x 1))
 ```
 
-In the ‘Build Your Own Lisp’ version, when evaluating S-Expressions, lambda and other functions are assigned a special ‘type’ so that they aren’t eagerly evaluated’. In that implementation **lambda** is itself a symbol (in global scope) that corresponds to a built-in function that creates a structure for holding an evaluated lambda.
+In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system.  If an expression has a type Q-Expression it won’t be eagerly evaluated. *lambda* itself is just a symbol in the global environment, whose value (S-Expression) happens to be a built-in function that is used to construct ‘Lambda’ structures.  
+
+There are pros-cons to the Q-Expression approach. It does lead to a very small subset of ‘built-in’ functions required( ‘*homoiconicity*’).  
 
 Other implementations tend not to do this, and have the *eval* function treat *lambda* as a ’special’ operation.
 
@@ -72,6 +74,7 @@ theory less memory.
 
 4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation.  The codebase would be significantly smaller if the implementation were done in a language like Scala. C++ involves *lots* of boilerplate, with no type pattern matching etc.
 
+5. In this codebase I’ve made no attempt at any tail call optimisation.
 
 ### Prelude
 
@@ -86,7 +89,7 @@ Here is some output from my C++ solution:
 ```lisp
 λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ()
-λ> defun [length xs] [ if (== xs nil) [0] [+ 1 (length (tail xs))]]
+λ> defun [length xs] [if (== xs nil) [0] [+ 1 (length (tail xs))]]
 ()
 λ> length [a b c d]
 4
