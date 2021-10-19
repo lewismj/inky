@@ -7,7 +7,8 @@ This project is an implementation of Greenspun’s tenth rule. It is not meant t
 
 There are a number of small Lisp interpreters available. These two are interesting, they take different approaches.
 
-1. [Build our Own Lisp][1] 2. [Wisp][2]
+* [Build our Own Lisp][1] 
+* [Wisp][2]
 
 The interesting difference between these approaches is how they deal with lambda functions and macros.
 
@@ -24,9 +25,9 @@ The simplest example is from Peter Novig’s [How to write a Lisp interpreter in
 
 ### Design
 
-Central to the design are the following choices
+The core design choices made were:
 
-1. Use a discriminated union to hold S-Expression, i.e.
+1. Use of a discriminated union to hold S-Expression, i.e.
 ```cpp
 std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> var;
 ```
