@@ -57,7 +57,7 @@ def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 Here is some output from my C++ solution:
 
 ```lisp
-λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
+λ> def [defun] (lambda [args body] [def (head args) (lambda (tail args) body)])
 ()
 λ> def [nil] []
 ()
