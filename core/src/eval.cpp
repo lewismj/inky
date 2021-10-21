@@ -19,6 +19,9 @@ namespace Inky::Lisp {
         Either<Error,ValuePtr> eval(ValuePtr v) {
             switch (v->kind) {
 
+                case Type::SExpression:
+                    return evalSExpression(v);
+
                 case Type::Symbol: {
                     auto key = std::get<std::string>(v->var);
                     auto lookup = env->lookup(key);
@@ -29,9 +32,6 @@ namespace Inky::Lisp {
                         return Error {fmt::format("unbound symbol: {}",key)};
                     }
                 }
-
-                case Type::SExpression:
-                    return evalSExpression(v);
 
                 case Type::Integer:
                 case Type::Double:
@@ -49,13 +49,136 @@ namespace Inky::Lisp {
             if ( v->cells.empty() ) return vp;
             if ( v->cells.size() == 1) return eval(v->cells[0]);
 
-            for (auto & cell : v->cells) {
-                auto maybe = eval(cell);
-                if ( maybe ) cell = maybe.right();
-                else return maybe.left();
+            /*
+             *
+             *  This small section of code can be used if you rely on []
+             *  syntax for argument and function definitions.
+             *  The [] syntax tags something as 'don't eagerly evaluate'.
+             *
+                    for (auto & cell : v->cells) {
+                        auto maybe = eval(cell);
+                        if ( maybe ) cell = maybe.right();
+                        else return maybe.left();
+                    }
+             *
+             * The while loop beneath is the 'special terms' required to
+             * tweak the eval so that you can use the more regular ()
+             * syntax, i.e.
+             * We want to write
+             *  (lambda (x) (+1 x)) 10
+             *  instead of ( lambda [x] [+ 1 x]) 10
+             */
+
+            size_t k = 0;
+            while ( k < v->cells.size() )  {
+              if ( Ops::hasSymbolName(v->cells[k],"defun"))   {
+                if ( k + 2 >= v->cells.size() ) {
+                    return Error { "defun must contain formals and body arguments."};
+                }
+
+                /* defun (foo x y) (+ x y) => define (foo) (lambda (x y) (+ x y) */
+                /* defun (args) (body) = define (head(args)) (lambda (tail args) (body)) */
+
+                auto formals = v->cells[k+1];
+                auto body = v->cells[k+2];
+                /*
+                 * we could doOps::makeSymbol("head") and Ops::makeSymbol("tail")
+                 * and evaluate these functions to get the head and tail of the
+                 * formals.
+                 * It is quicker to just short-circuit that and manipulate the
+                 * lists directly.
+                 *
+                 * Similarly, we could just invoke builtin functions here,
+                 * but we can directly construct and put the function name into
+                 * the environment etc.
+                 *
+                 */
+
+                if ( !Ops::isExpression(formals) ) {
+                    return Error { "formals to defun should be expression."};
+                }
+                ExpressionPtr xs = std::get<ExpressionPtr>(formals->var);
+                if (xs->cells.size() < 2) {
+                    return Error { "function must have name and at least one argument."};
+                }
+                ValuePtr functionName= xs->cells[0];
+                if ( functionName->kind != Type::Symbol ) {
+                   return Error { "function name must be a symbol."} ;
+                }
+                std::string name = std::get<std::string>(functionName->var);
+                xs->cells.pop_front(); /* remove the function name from the formals. */
+                EnvironmentPtr e(new Environment());
+                ValuePtr lambda = Ops::makeFunction(std::make_shared<Lambda>(Lambda{ formals, body, e }));
+
+                env->insert(name,lambda);
+
+                v->cells.pop_front(); // defun.
+                v->cells.pop_front(); // formals
+                v->cells.pop_front(); // args.
+                v->cells.push_front(lambda); // lambda.
+              }
+              else {
+                  auto maybe = eval(v->cells[k]);
+                  if (maybe) {
+                      /*
+                       * The base implementation has a syntax [] for 'quoted expressions',
+                       * eval([x]) = [x],
+                       * This is useful for evaluation, e.g.
+                       *
+                       *  (lambda [x] [+ 1 x])  (+ 10 10)
+                       *
+                       *  Eval can just - evaluate all sub expressions, run the function.
+                       *  Since [x] and [+1 x] return themselves.
+                       *
+                       *  To allow the more regular syntax we need to deal with lambda, define, and defun
+                       *  in the eval:
+                       */
+                      if (Ops::hasSymbolName(v->cells[k], "lambda") || Ops::hasSymbolName(v->cells[k], "\\")) {
+                          if (k + 2 >= v->cells.size()) {
+                              return Error {"lambda definition must contain formals and body."};
+                          }
+                          v->cells[k] = maybe.right();
+
+                          /*  Simply skip over the eval of the lambda formals and body defn;
+                           * This allows:
+                           *  lambda (x) (+ 1 x) to be written, rather than explicitly  lambda [x] [+1 x]
+                           *  The [] syntax specified the type as 'q-expression' meaning just return self.
+                           *  which is convenient, but 'not standard'.
+                           */
+                          k += 3; /* don't eval lambda function arguments on defn. */
+                      } else if (Ops::hasSymbolName(v->cells[k], "def") || Ops::hasSymbolName(v->cells[k], "define")) {
+                          if (k + 2 >= v->cells.size()) {
+                              return Error{"define must have two arguments."};
+                          }
+                          v->cells[k] = maybe.right();
+                          v->cells[k + 1]->kind = Type::QExpression;
+                          k += 2;
+                      } else if (Ops::hasSymbolName(v->cells[k], "if")) {
+                          /* if (condition) (then) (else) */
+                          if (k + 3 >= v->cells.size()) {
+                              return Error{"if statement must be of form if (condition) (then) (else)."};
+                          }
+                          v->cells[k] = maybe.right();
+                          auto cond = eval(v->cells[k + 1]);
+                          if (cond) {
+                              v->cells[k + 1] = cond.right();
+                          } else {
+                              return cond.left();
+                          }
+                          k += 4;
+                      } else {
+                          v->cells[k] = maybe.right();
+                          ++k;
+                      }
+                  } else {
+                      return maybe.left();
+                  }
+              }
             }
 
-            /* First cell should be a function type (builtin or defined). */
+
+            /* applicative order eval, reduced the arguments, call the fn. */
+
             if ( v->cells[0]->kind == Type::BuiltinFunction ) {
                 ValuePtr fn = v->cells[0];
                 v->cells.pop_front();

@@ -1,11 +1,9 @@
-; prelude
-;   basic types and infrastructure in the lisp-ish.
+def (nil) []
+def (true) 1
+def (false) 0
 
-; defun - provide a way of defining functions as named lambda.
-def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
+; Slightly more standard Lisp syntax.
+; Cost is to define some 'special cases' in the eval function
+; (as most other implementations do, vs. base case in 'Build Your Own Lisp).
 
-; e.g. defun [example-fn x y] [+ x y]
-
-def [nil] []
-def [true] 1
-def [false] 0
+defun (length xs) (if (== xs nil) (0) (+ 1 (length (tail xs))))

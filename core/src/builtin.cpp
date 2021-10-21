@@ -363,8 +363,8 @@ namespace Inky::Lisp {
         ValuePtr exp2 = xs->cells[2];
 
         if (cond->kind != Type::Integer) return Error {"if condition must return true or false."};
-        if (exp1->kind != Type::QExpression) return Error {"true condition of if, not list expression type."};
-        if (exp2->kind != Type::QExpression) return Error {"false condition of it, not list expression type."};
+        //if (exp1->kind != Type::QExpression) return Error {"true condition of if, not list expression type."};
+       // if (exp2->kind != Type::QExpression) return Error {"false condition of it, not list expression type."};
 
         /* Now set them to SExpression for eval. */
         exp1->kind = Type::SExpression;
