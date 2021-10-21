@@ -42,7 +42,7 @@ theory less memory.
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
-3. I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions. 
+3. I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions. In the first version v1.0. In v1.1 I made minimal changes necessary to support more standard syntax. As other implementations, it just means adding ‘special cases’ into the evaluation function.
 
 4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation.  There is not too much code, but would be less if done using say Scala.
 
@@ -50,21 +50,21 @@ theory less memory.
 
 ### Prelude
 
-#### version 1
+#### v1.0
 The ‘Build Your Own Lisp’ approach is interesting as it allows you to bootstrap your environment from a very basic Prelude, for example:
 
 ```lisp
 def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ```
 
-#### version 2
+#### v1.1
 We define function *defun* in the evaluator itself, as so the expansion:
 `defun (foo x y) (+ x y)` to `def (foo) (lambda (x y) (+ x y)`,
 is implemented directly.
 
 ### Example Output
 
-#### version 1
+#### v1.0
 ```lisp
 λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ()
@@ -97,7 +97,7 @@ is implemented directly.
 λ> :q
 ```
 
-#### version2
+#### v1.1
 ```lisp
 `
 λ> defun (length xs) (if (== xs nil) (0) (+ 1 (length (tail xs))))
