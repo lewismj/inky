@@ -7,8 +7,7 @@ This project is an implementation of Greenspun’s tenth rule. It is not meant t
 
 There are a number of small Lisp interpreters available. These two are interesting, they take different approaches.
 
-* [Build our Own Lisp][1] 
-* [Wisp][2]
+* [Build our Own Lisp][1] * [Wisp][2]
 
 The interesting difference between these approaches is how they deal with lambda functions and macros.
 
@@ -23,8 +22,10 @@ Other implementations tend not to do this, and have the *eval* function treat *l
 The simplest example is from Peter Novig’s [How to write a Lisp interpreter in Python][3]
 
 Note:
-* Looking at the designs, the simplicity of ‘Build Your Own Lisp’ and having a very small set of builtin functions that are essential (*def* and *lambda*) is conceptually very clean. This was implemented for v1.0.
-* Slightly uglier (but somewhat follows other implementations, we deal with ‘special cases’ in the evaluation function), this allows more conventional syntax of `lambda (x) (+ 1 x)` for lambda body rather than say `lambda [x] [+ 1 x]`.
+
+* Looking at the designs, the simplicity of ‘Build Your Own Lisp’ and having a very small set of builtin functions that are essential (*def* and *lambda*) is conceptually very clean. This was implemented for **v1.0**.
+
+* Slightly uglier (but somewhat follows other implementations) In **v1.1** I deal with ‘special cases’ in the evaluation function. This enables a conventional syntax. For example, `lambda (x) (+ 1 x)` rather than `lambda [x] [+ 1 x]`.
 
 ### Design
 
