@@ -26,7 +26,7 @@ namespace Inky::Lisp {
     private:
 
         /* Move one character along the input, provided we're not at the end of the input. */
-        void move() {
+        void advance() {
            if ( i != input.end() ) ++i;
         }
 
@@ -43,10 +43,10 @@ namespace Inky::Lisp {
         void skipWhitespace() {
             while (i != input.end() && *i != '\0' && std::isspace(*i))  {
                 if (*i == ';') {
-                    while (i != input.end() && *i != '\n' && *i != '\0') move();
+                    while (i != input.end() && *i != '\n' && *i != '\0') advance();
                     return;
                 }
-                move();
+                advance();
             }
         }
 
@@ -61,15 +61,15 @@ namespace Inky::Lisp {
             Either<Error,ValuePtr> rtn(nullptr);
 
             if (*i == '(') {
-                move();
+                advance();
                 rtn = readExpressionType(Type::SExpression,')');
             }
             else if (*i =='[') {
-                move();
+                advance();
                 rtn = readExpressionType(Type::QExpression,']');
             }
             else if (*i == '\"') {
-                move();
+                advance();
                 rtn = readStringLiteral();
             }
             else if (isNumeric()) {
@@ -94,7 +94,7 @@ namespace Inky::Lisp {
                 auto j = readValue();
                 if (j) expression->insert(j.right()); else return j.left();
             }
-            move();
+            advance();
             return kind == Type::SExpression ?
                 Ops::makeSExpression(expression) : Ops::makeQExpression(expression);
         }
@@ -105,7 +105,7 @@ namespace Inky::Lisp {
                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                            "0123456789_+-*\\/=<>!&", *i) && *i != '\0') {
                 os << *i;
-                move();
+                advance();
             }
             return Ops::makeSymbol(os.str());
         }
@@ -122,9 +122,9 @@ namespace Inky::Lisp {
                     return Error { "string literal not terminated", l };
                 }
                 os << *i;
-                move();
+                advance();
             }
-            move();
+            advance();
             return Ops::makeString(os.str());
         }
 
@@ -134,14 +134,14 @@ namespace Inky::Lisp {
             double sign = 1;
             if ((*i == '+' || *i == '-')) {
                 sign = *i == '+' ? 1 : -1;
-                move();
+                advance();
             }
             double val = 0.0;
             double power = 0.0;
 
-            for (val = 0.0; std::isdigit(*i); move()) val = 10.0 * val + (*i - '0');
-            if (*i == '.') move();
-            for (power = 1.0; std::isdigit(*i); move()) {
+            for (val = 0.0; std::isdigit(*i); advance()) val = 10.0 * val + (*i - '0');
+            if (*i == '.') advance();
+            for (power = 1.0; std::isdigit(*i); advance()) {
                 val = 10.0 * val + (*i - '0');
                 power *= 10.0;
             }

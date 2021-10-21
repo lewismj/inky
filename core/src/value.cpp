@@ -181,5 +181,11 @@ namespace Inky::Lisp {
         bool isNumeric(ValuePtr a) { return a->kind == Type::Integer || a->kind == Type::Double; }
 
         bool isExpression(ValuePtr a) { return a->kind == Type::SExpression || a->kind == Type::QExpression; }
+
+        bool hasSymbolName(ValuePtr a, std::string_view s) {
+            if ( a->kind != Type::Symbol ) return false;
+            else return std::get<std::string>(a->var) == s;
+        }
+
     }
 }
