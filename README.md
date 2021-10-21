@@ -22,6 +22,9 @@ Other implementations tend not to do this, and have the *eval* function treat *l
 
 The simplest example is from Peter Novig’s [How to write a Lisp interpreter in Python][3]
 
+Note:
+* Looking at the designs, the simplicity of ‘Build Your Own Lisp’ and having a very small set of builtin functions that are essential (*def* and *lambda*) is conceptually very clean. This was implemented for v1.0.
+* Slightly uglier (but somewhat follows other implementations, we deal with ‘special cases’ in the evaluation function), this allows more conventional syntax of `lambda (x) (+ 1 x)` for lambda body rather than say `lambda [x] [+ 1 x]`.
 
 ### Design
 
@@ -47,17 +50,23 @@ theory less memory.
 
 ### Prelude
 
+#### version 1
 The ‘Build Your Own Lisp’ approach is interesting as it allows you to bootstrap your environment from a very basic Prelude, for example:
 
 ```lisp
 def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ```
 
-### Example Output
-Here is some output from my C++ solution:
+#### version 2
+We define function *defun* in the evaluator itself, as so the expansion:
+`defun (foo x y) (+ x y)` to `def (foo) (lambda (x y) (+ x y)`,
+is implemented directly.
 
+### Example Output
+
+#### version 1
 ```lisp
-λ> def [defun] (lambda [args body] [def (head args) (lambda (tail args) body)])
+λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
 ()
 λ> def [nil] []
 ()
@@ -85,6 +94,33 @@ Here is some output from my C++ solution:
 ()
 λ> sum [1 2 3 4 5 6 7 8 9 10]
 55
+λ> :q
+```
+
+#### version2
+```lisp
+`
+λ> defun (length xs) (if (== xs nil) (0) (+ 1 (length (tail xs))))
+lambda:
+	formals:(xs)
+	body:(if (== xs nil) (0) (+ 1 (length (tail xs))))
+
+λ> def (nil) []
+()
+λ> length [a b c d]
+4
+λ> defun (foo x) (+ 1 x)
+lambda:
+	formals:(x)
+	body:(+ 1 x)
+
+λ> defun (bar f x) (f x)
+lambda:
+	formals:(f x)
+	body:(f x)
+
+λ> bar foo 1
+2
 λ> :q
 ```
 
