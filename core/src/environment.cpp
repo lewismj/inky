@@ -52,18 +52,16 @@ namespace Inky::Lisp {
 
     EnvironmentPtr Environment::clone() {
         EnvironmentPtr env (new Environment());
-        env->outer = outer;
+        env->outer = outer; /* Outer scopes are shared not cloned. */
         for(const auto& kv: definitions) {
             env->insert(kv.first,kv.second->clone());
         }
         return env;
     }
 
-
     std::ostream& operator<<(std::ostream& os, EnvironmentPtr env) {
         for (const auto& kv: env->definitions) os << "\t:" << kv.first << " :" << kv.second << "\n";
         if ( env->outer != nullptr ) {
-            std::cout << "outer:\n";
             os << env->outer << "\n";
         }
         return os;

@@ -51,7 +51,7 @@ namespace Inky::Lisp {
     struct Lambda {
         ValuePtr        formals;    /* arguments of an expression.          */
         ValuePtr        body;       /* definition of the function itself.   */
-        EnvironmentPtr  env;      /* environment of the lambda.           */
+        EnvironmentPtr  env;        /* environment of the lambda.           */
     };
     typedef std::shared_ptr<Lambda> LambdaPtr;
 

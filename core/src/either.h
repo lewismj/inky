@@ -26,16 +26,12 @@ namespace Inky::Lisp {
         T value;
     };
 
-
     /*
      * Template for return types Either<Error,Result>;
      * Not yet added:  RightMap, LeftMap functions.
      */
 
     template<typename L, typename R> struct Either {
-        using error_type = L;
-        using result_type = R;
-
         Either(const R& result): var(result) {}
         Either(const L& error): var(error) {}
         Either(const Right<R>& result): var(result.value) {}
@@ -50,7 +46,6 @@ namespace Inky::Lisp {
         R right() const { return std::get<R>(var); }
 
         std::variant<L,R> var;
-
     };
 
 }

@@ -7,7 +7,8 @@ This project is an implementation of Greenspun’s tenth rule. It is not meant t
 
 There are a number of small Lisp interpreters available. These two are interesting, they take different approaches.
 
-* [Build our Own Lisp][1] * [Wisp][2]
+* [Build our Own Lisp][1] 
+* [Wisp][2]
 
 The interesting difference between these approaches is how they deal with lambda functions and macros.
 

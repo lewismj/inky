@@ -225,7 +225,6 @@ namespace Inky::Lisp {
              * i.e. both will have formals unspecified. */
 
             bool hasSomeArgs = !a->cells.empty();
-
             while ( ! a->cells.empty() ) {
                 if (formals->cells.empty()) {
                     std::string str = fmt::format("function passed too many arguments {} , expected {}", arg_count, formals_count);
@@ -237,28 +236,44 @@ namespace Inky::Lisp {
                 if ( symbol->kind != Type::Symbol ) return Error {"function eval failed formal not a symbol."};
                 std::string symbol_name = std::get<std::string>(symbol->var);
 
+                if (symbol_name == "&") { /* variable arguments. */
+                    if (formals->cells.size() != 1) {
+                        return Error {"function signature invalid, varargs '&' must have one following symbol."};
+                    }
+                    /* We have something of the form "x & xs"; bind the 'xs' symbol to list of supplied args. */
+                    ValuePtr tmp = formals->cells[0];
+                    formals->cells.pop_front();
+                    if ( tmp->kind != Type::Symbol ) return Error { "function formal not a symbol."};
+                    ar->kind = Type::QExpression; /* make list expression. */
+                    std::string xs_name = std::get<std::string>(tmp->var);
+                    fn->env->insert(xs_name,ar);
+                    break;
+                }
+
                 ValuePtr argument = a->cells[0]; a->cells.pop_front();
                 fn->env->insert(symbol_name,argument);
             }
 
-            if (formals->cells.empty()) {
+            if (!formals->cells.empty() && Ops::hasSymbolName(formals->cells[0],"&")) {
+                /* Case deals with variable arguments where nothing supplied for the variable
+                 * args, in this case, we can just assign the formal an empty expression. */
+                if ( formals->cells.size() != 2 ) {
+                    return Error {"function signature should be of form: x & xs when passing variable args."};
+                }
+                formals->cells.pop_front();
+                ValuePtr xs = formals->cells[0]; formals->cells.pop_front();
+                ValuePtr exp = Ops::makeQExpression();
+                if (xs->kind != Type::Symbol) return Error {"formal must be symbol."};
+                fn->env->insert(std::get<std::string>(xs->var) ,exp);
+            }
+
+            if (formals->cells.empty()) { /* Fully supplied args. */
                 fn->env->setOuterScope(env);
                 ValuePtr body = fn->body->clone();
                 body->kind = Type::SExpression;
                 return Inky::Lisp::eval(fn->env, body);
             }
-
-            if ( hasSomeArgs && !formals->cells.empty() ) {
-                /*
-                 * Partially applied the function.
-                 * Make a copy of the function environment for this instance
-                 * of the lambda, so that args aren't overridden.
-                 * The env associated with the partial function will have the
-                 * arguments in it, and unique to 'this' function.
-                 *
-                 * n.b. the clone on the env - will clone the env but the
-                 * outer-scope are shared pointers, e.g. share a global scope.
-                 */
+            else if ( hasSomeArgs && !formals->cells.empty() ) { /* Partially supplied args. */
                 LambdaPtr lambda(new Lambda());
                 lambda->formals = formalsValuePtr->clone();
                 lambda->body = fn->body->clone();
