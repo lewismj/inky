@@ -3,7 +3,7 @@
 Greenspun’s tenth rule
 
 ### Summary
-This project is an implementation of Greenspun’s tenth rule. It is not meant to be a full featured Lisp.
+This project is an implementation of Greenspun’s tenth rule. It is not meant to be a full featured Lisp. 
 
 There are a number of small Lisp interpreters available. These two are interesting, they take different approaches.
 

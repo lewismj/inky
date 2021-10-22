@@ -17,3 +17,4 @@ defun (pack f & xs) (f xs)
 def (uncurry) pack
 defun (unpack f xs) (eval (join (list f) xs))
 def (curry) unpack
+

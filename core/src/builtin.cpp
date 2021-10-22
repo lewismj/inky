@@ -388,6 +388,16 @@ namespace Inky::Lisp {
         else return eval(e,exp2);
     }
 
+    /* Error function. */
+    Either<Error,ValuePtr> builtin_error(EnvironmentPtr , ValuePtr v) {
+        if (!Ops::isExpression(v)) return Error {"error function must be passed a string literal expression."};
+        ExpressionPtr xs = std::get<ExpressionPtr>(v->var);
+        if ( xs->cells.size() != 1) return Error {"error function expects a single argument."};
+        if ( xs->cells[0]->kind != Type::String ) return Error {"error function argument does not evaluate to string."};
+
+        return Error { std::get<std::string>(xs->cells[0]->var) };
+    }
+
     void addBuiltinFunctions(EnvironmentPtr env) {
         std::initializer_list<std::pair<std::string,BuiltinFunction>> builtins = {
                 { "lambda", builtin_lambda},
@@ -410,7 +420,8 @@ namespace Inky::Lisp {
                 {">=",builtin_gte},
                 {"==",builtin_eq},
                 {"!=",builtin_neq},
-                {"if",builtin_if}
+                {"if",builtin_if},
+                {"error",builtin_error}
         };
 
         for (const auto& kv: builtins ) {
