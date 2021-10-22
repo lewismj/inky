@@ -99,6 +99,9 @@ namespace Inky::Lisp {
         ValuePtr list = expression->cells[0];
         ExpressionPtr xs = std::get<ExpressionPtr>(list->var);
 
+        if ( xs->cells.empty() ) return Error { "head of empty list."};
+            //return Ops::makeQExpression(); /* head of an empty list is empty list, could be error?*/
+
         ValuePtr head = xs->cells[0];
         ExpressionPtr result(new Expression());
         result->insert(head);
@@ -114,6 +117,8 @@ namespace Inky::Lisp {
         ValuePtr list = expression->cells[0];
         ExpressionPtr xs = std::get<ExpressionPtr>(list->var);
 
+        if ( xs->cells.empty() )  return Error { "tail of empty list."};
+            //return Ops::makeQExpression(); /* tail of empty list is empty list, could be error? */
         xs->cells.pop_front(); /* Remove the head. */
 
         return Ops::makeQExpression(xs);
@@ -274,8 +279,19 @@ namespace Inky::Lisp {
 
 
 
-    auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      { return builtin_op(e,v, { add<long>, add<double> }); };
-    auto builtin_subtract = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { subtract<long>, subtract<double> }); };
+    auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      {
+       /* TODO - allow unary operator too; so + [-1] = [1]  */
+
+
+        return builtin_op(e,v, { add<long>, add<double> });
+    };
+
+    auto builtin_subtract = [](EnvironmentPtr e, ValuePtr v) {
+        /* TODO - allow unary operator too; so - [+1] = [1] */
+
+        return builtin_op(e,v, { subtract<long>, subtract<double> });
+    };
+
     auto builtin_divide = [](EnvironmentPtr e, ValuePtr v)   { return builtin_op(e,v, { divide<long>, divide<double> }); };
     auto builtin_multiply = [](EnvironmentPtr e, ValuePtr v) { return builtin_op(e,v, { multiply<long>, multiply<double> }); };
 
