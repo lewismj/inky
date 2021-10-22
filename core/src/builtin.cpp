@@ -280,15 +280,12 @@ namespace Inky::Lisp {
 
 
     auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      {
-       /* TODO - allow unary operator too; so + [-1] = [1]  */
-
-
+       /* TODO - Should this allow unary operator too; so + [-1] = [1]  ??? */
         return builtin_op(e,v, { add<long>, add<double> });
     };
 
     auto builtin_subtract = [](EnvironmentPtr e, ValuePtr v) {
-        /* TODO - allow unary operator too; so - [+1] = [1] */
-
+        /* TODO - Should allow unary operator too; so - [+1] = [1] ??? */
         return builtin_op(e,v, { subtract<long>, subtract<double> });
     };
 

@@ -122,6 +122,16 @@ lambda:
 
 λ> bar foo 1
 2
+λ> ; Using prelude ...
+λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
+[3 4]
+λ> defun (inv x) (* -1 x)
+lambda:
+	formals:(x)
+	body:(* -1 x)
+
+λ> map inv [2 4 6 8]
+[-2 -4 -6 -8]
 λ> :q
 ```
 

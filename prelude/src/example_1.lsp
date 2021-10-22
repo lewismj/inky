@@ -1,7 +1,9 @@
-def [defun] (lambda [args body] [def (head args) (lambda (tail args) body)])
-def [nil] []
-def [true] 1
-def [false] 0
-defun [length xs] [if (== xs nil) [0] [+ 1 (length (tail xs))]]
-length [a b c d]
+; examples
+defun (inv x) (* -1 x)
+defun (product xs) (foldl * 1 xs)
 
+;
+map (lambda (x) (+ 1 x)) [ 2 3 4 6]
+map inv [2 4 6 8]
+filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
+product [2 2 2]
