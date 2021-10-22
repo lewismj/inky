@@ -37,6 +37,9 @@ namespace Inky::Lisp {
       /* Returns the outer scope of this environment. */
       EnvironmentPtr getOuterScope();
 
+      /* Make a copy of the items in this environment, copy the ptr to the outer environment. */
+      EnvironmentPtr clone();
+
       friend std::ostream& operator<<(std::ostream& os, EnvironmentPtr env);
 
    private:

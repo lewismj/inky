@@ -215,11 +215,16 @@ namespace Inky::Lisp {
             ExpressionPtr a = std::get<ExpressionPtr>(ar->var);
 
             size_t arg_count = a->cells.size();
-            ValuePtr formalsV = fn->formals->clone(); /* clone the formals for each execution. */
-            ExpressionPtr formals = std::get<ExpressionPtr>(formalsV->var);
+            ValuePtr formalsValuePtr = fn->formals->clone(); /* clone the formals for each execution. */
 
+            ExpressionPtr formals = std::get<ExpressionPtr>(formalsValuePtr->var);
             size_t formals_count = formals->cells.size();
 
+            /* this flag is used to check if some args. initially supplied,
+             * so that we can differentiate between lambda defn. and partial application.
+             * i.e. both will have formals unspecified. */
+
+            bool hasSomeArgs = !a->cells.empty();
 
             while ( ! a->cells.empty() ) {
                 if (formals->cells.empty()) {
@@ -227,50 +232,42 @@ namespace Inky::Lisp {
                     return Error { str };
                 }
 
-                ValuePtr symbol = formals->cells[0]; formals->cells.pop_front();
+                ValuePtr symbol = formals->cells[0];
+                formals->cells.pop_front();
                 if ( symbol->kind != Type::Symbol ) return Error {"function eval failed formal not a symbol."};
                 std::string symbol_name = std::get<std::string>(symbol->var);
-
-                if ( symbol_name == "&") {
-                    if ( formals->cells.size() != 1) {
-                        return Error {"function formal signature invalid, varargs '&' must have 1 following symbol."} ;
-                    }
-                    /* we have something of the form "x & xs"; bind the 'xs' symbol to list of supplied args. */
-                    ValuePtr tmp = formals->cells[0]; formals->cells.pop_front();
-                    if ( tmp->kind != Type::Symbol) return Error { "function formal not symbol."};
-                    auto f = Ops::makeSymbol("list");
-                    auto xs = evalBuiltinFunction(f,ar) ;
-                    //auto xs = inky::builtin::builtin_list(env,a);
-                    if ( xs ) fn->env->insert(std::get<std::string>(tmp->var),xs.right());
-                    else return xs.left(); /* error */
-                }
 
                 ValuePtr argument = a->cells[0]; a->cells.pop_front();
                 fn->env->insert(symbol_name,argument);
             }
 
-            if (!formals->cells.empty()) {
-                ValuePtr tmp = formals->cells[0];
-                if ( tmp->kind == Type::Symbol && std::get<std::string>(tmp->var) == "&") {
-                    if ( formals->cells.size() != 2 ) {
-                        return Error {"function signature should be of the form: x & xs, for variable arguments."};
-                    }
-                    formals->cells.pop_front();
-                    ValuePtr xs = formals->cells[0]; formals->cells.pop_front();
-                    if ( xs->kind != Type::Symbol) return Error { "function formal must be symbol."};
-                    ValuePtr q_expr = Ops::makeQExpression();
-                    fn->env->insert(std::get<std::string>(xs->var),q_expr);
-                }
-            }
-
-            if (formals->cells.empty()) { /* all arguments have been supplied. */
+            if (formals->cells.empty()) {
                 fn->env->setOuterScope(env);
                 ValuePtr body = fn->body->clone();
                 body->kind = Type::SExpression;
                 return Inky::Lisp::eval(fn->env, body);
             }
 
-            return f->clone(); /* partially applied function. */
+            if ( hasSomeArgs && !formals->cells.empty() ) {
+                /*
+                 * Partially applied the function.
+                 * Make a copy of the function environment for this instance
+                 * of the lambda, so that args aren't overridden.
+                 * The env associated with the partial function will have the
+                 * arguments in it, and unique to 'this' function.
+                 *
+                 * n.b. the clone on the env - will clone the env but the
+                 * outer-scope are shared pointers, e.g. share a global scope.
+                 */
+                LambdaPtr lambda(new Lambda());
+                lambda->formals = formalsValuePtr->clone();
+                lambda->body = fn->body->clone();
+                lambda->env = fn->env->clone();
+
+                return Ops::makeFunction(lambda);
+            }
+
+            return f->clone(); // Return lambda, no args called yet, just return an empty instance for use.
         }
 
         Either<Error, ValuePtr> evalBuiltinFunction(ValuePtr f, ValuePtr a) {
