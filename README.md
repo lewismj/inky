@@ -29,8 +29,7 @@ Note:
 * Fundamentally the design of ‘Build Your Own Lisp’ v.s. other designs is one that easily allows for partial function application. I decided to follow a similar design and extend it with special forms necessary to provide a more usual Lisp syntax, **v1.1**
 
 * Basic functionality is working. Though purely as demo/throwaway code; essentially a proof-of-concept or loose specification for a ‘real’ interpreter.	
-````lisp
-```
+```lisp
 λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
 [3 4]
 
@@ -58,8 +57,7 @@ lambda:
 55
 λ> fib 15
 610
-
-````
+```
 
 ### Design
 
@@ -90,54 +88,7 @@ Very, very slow.
 
 6. In this codebase I’ve made no attempt at any tail call optimisation.
 
-
-#### v1.0
-The ‘Build Your Own Lisp’ approach is interesting as it allows you to bootstrap your environment from a very basic Prelude, for example:
-
-```lisp
-def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
-```
-
-#### v1.1
-We define function *defun* in the evaluator itself, as so the expansion:
-`defun (foo x y) (+ x y)` to `def (foo) (lambda (x y) (+ x y)`,
-is implemented directly.
-
 ### Example Output
-
-#### v1.0
-```lisp
-λ> def [defun] (\ [args body] [def (head args) (\ (tail args) body)])
-()
-λ> def [nil] []
-()
-λ> def [true] 1
-()
-λ> def [false] 0
-()
-λ> defun [length xs] [if (== xs nil) [0] [+ 1 (length (tail xs))]]
-()
-λ> length [a b c d]
-4
-λ> (+ (* 3 (+ (* 2 4) (+ 3 5))) (+ (- 10 7) 6))
-57
-λ> (def [foo] (lambda [x] [+ x 1]))
-()
-λ> (def [bar] (lambda [f x] [f x]))
-()
-λ> bar foo 1
-2
-λ> defun [fst xs] [ eval (head xs) ]
-()
-λ> defun [foldl f z l] [if (== l nil) [z] [foldl f (f z (fst l)) (tail l)]]
-()
-λ> defun [sum l] [foldl + 0 l]
-()
-λ> sum [1 2 3 4 5 6 7 8 9 10]
-55
-λ> :q
-```
-
 #### v1.1
 ```lisp
 `
