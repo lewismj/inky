@@ -271,7 +271,7 @@ namespace Inky::Lisp {
                 fn->env->setOuterScope(env);
                 ValuePtr body = fn->body->clone();
                 body->kind = Type::SExpression;
-                return Inky::Lisp::eval(fn->env, body);
+                return Inky::Lisp::eval(fn->env->clone(), body);
             }
             else if ( hasSomeArgs && !formals->cells.empty() ) { /* Partially supplied args. */
                 LambdaPtr lambda(new Lambda());

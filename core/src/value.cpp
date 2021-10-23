@@ -26,7 +26,7 @@ namespace Inky::Lisp {
 
                 copy->formals = lambda->formals->clone();
                 copy->body = lambda->body->clone();
-
+                copy->env = lambda->env->clone();
 
                 return Ops::makeFunction(copy);
             }

@@ -28,9 +28,44 @@ Note:
 
 * Fundamentally the design of ‘Build Your Own Lisp’ v.s. other designs is one that easily allows for partial function application. I decided to follow a similar design and extend it with special forms necessary to provide a more usual Lisp syntax, **v1.1**
 
-* The basics work - partial application, functions as parameters, etc. Likely a several  bugs. This was an experiment to: investigate syntax of Lisp and take a look at some C++ parser combinators etc.
+* Basic functionality is working. Though purely as demo/throwaway code; essentially a proof-of-concept or loose specification for a ‘real’ interpreter.	
+````lisp
+```
+λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
+[3 4]
+
+λ> defun (product xs) (foldl * 1 xs)
+
+λ> product [2 2 2]
+8
+λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
+[3 4]
+
+λ> defun (inv x) (* -1 x)
+lambda:
+	formals:(x)
+	body:(* -1 x)
+
+λ> map inv [2 4 6 8]
+[-2 -4 -6 -8]
+
+λ>  defun (fib n)  (if (== n 0) (0) (if (== n 1) (1) ((+ (fib (- n 2)) (fib (- n 1))))))
+lambda:
+	formals:(n)
+	body:(if (== n 0) (0) (if (== n 1) (1) ((+ (fib (- n 2)) (fib (- n 1))))))
+
+λ> fib 10
+55
+λ> fib 15
+610
+
+````
 
 ### Design
+
+I would summarise this section as justification for always producing a throwaway prototype. Not (as so often happens) starting with an R&D effort and ‘iterating’ in a phoney agile way. 
+
+ If building new systems, I always like to rapidly prototype *but* throwaway the prototype. I think its invaluable part of building new software.
 
 The core design choices made were:
 
@@ -41,19 +76,19 @@ std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> va
 
 In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-I would definitely *not* use `std::variant` again. A poor alternative to sum types. The code bloat with `std::get` is horrific, so is the manual pattern matching on type (that I’m not convinced can be got rid of by sprinkling in a Visitor pattern. 
+I would definitely *not* use `std::variant` again. A poor alternative to sum types. The code bloat with `std::get` is horrific. Manual pattern matching on type (that I’m not convinced can be got rid of by sprinkling in a Visitor pattern.
+Very, very slow.
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
-	Investigating other C++ parser combinators (which was one of the reasons for this experiment).	
 
-4.  The interface to the parser is simple ` Either<Error,ValuePtr> parse(std::string_view in)`. The parser will return a smart pointer to a `Value` that represents the S-Expression or an Error.
+3.  The interface to the parser is simple ` Either<Error,ValuePtr> parse(std::string_view in)`. The parser will return a smart pointer to a `Value` that represents the S-Expression or an Error.
 	One issue is that this carried over to the evaluation function `Either<Error,ValuePtr> eval(EnvironmentPtr env, ValuePtr val)` this does mean *runtime errors* are essentially treated as exceptions. The variant above should really contain an `Error` type (separate to Parse Error) so that there is a distinction between exception and error.
 
-5. I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions. In the first version v1.0. In v1.1 I made minimal changes necessary to support more standard syntax. As other implementations, it just means adding ‘special cases’ into the evaluation function.
+4. I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions. In the first version v1.0. In v1.1 I made minimal changes necessary to support more standard syntax.  There is a trade off, the ‘special forms’ complicate the evaluation. 
 
-4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation. **Actually it isn’t.**  There is not too much code, but would be less if done using say Scala.
+5. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation. **Actually it isn’t.**  There is not too much code, but would be less if done using say Scala. 
 
-5. In this codebase I’ve made no attempt at any tail call optimisation.
+6. In this codebase I’ve made no attempt at any tail call optimisation.
 
 
 #### v1.0
