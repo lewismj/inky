@@ -30,7 +30,6 @@ Note:
 
 * Basic functionality is working. Though purely as demo/throwaway code; essentially a proof-of-concept or loose specification for a ‘real’ interpreter.	
 ````lisp
-```
 λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
 [3 4]
 
@@ -58,8 +57,7 @@ lambda:
 55
 λ> fib 15
 610
-
-````
+```
 
 ### Design
 
@@ -140,7 +138,6 @@ is implemented directly.
 
 #### v1.1
 ```lisp
-`
 λ> defun (length xs) (if (== xs nil) (0) (+ 1 (length (tail xs))))
 lambda:
 	formals:(xs)
