@@ -26,7 +26,9 @@ Note:
 
 * Looking at the designs, the simplicity of ‘Build Your Own Lisp’ and having a very small set of builtin functions that are essential (*def* and *lambda*) is conceptually very clean. This was implemented for **v1.0**.
 
-* Slightly uglier (but somewhat follows other implementations) In **v1.1** I deal with ‘special cases’ in the evaluation function. This enables a conventional syntax. For example, `lambda (x) (+ 1 x)` rather than `lambda [x] [+ 1 x]`.
+* Fundamentally the design of ‘Build Your Own Lisp’ v.s. other designs is one that easily allows for partial function application. I decided to follow a similar design and extend it with special forms necessary to provide a more usual Lisp syntax, **v1.1**
+
+* The basics work - partial application, functions as parameters, etc. Likely a several  bugs. This was an experiment to: investigate syntax of Lisp and take a look at some C++ parser combinators etc.
 
 ### Design
 
@@ -39,18 +41,20 @@ std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> va
 
 In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-I’m not sure if I would follow this approach if I were building a full implementation. The cost (lots of `std::get` function calls to take a value out of the variant v.s. the benefit - no inheritance hierarchy, smaller codebase, in
-theory less memory.
+I would definitely *not* use `std::variant` again. A poor alternative to sum types. The code bloat with `std::get` is horrific, so is the manual pattern matching on type (that I’m not convinced can be got rid of by sprinkling in a Visitor pattern. 
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
+	Investigating other C++ parser combinators (which was one of the reasons for this experiment).	
 
-3. I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions. In the first version v1.0. In v1.1 I made minimal changes necessary to support more standard syntax. As other implementations, it just means adding ‘special cases’ into the evaluation function.
+4.  The interface to the parser is simple ` Either<Error,ValuePtr> parse(std::string_view in)`. The parser will return a smart pointer to a `Value` that represents the S-Expression or an Error.
+	One issue is that this carried over to the evaluation function `Either<Error,ValuePtr> eval(EnvironmentPtr env, ValuePtr val)` this does mean *runtime errors* are essentially treated as exceptions. The variant above should really contain an `Error` type (separate to Parse Error) so that there is a distinction between exception and error.
 
-4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation.  There is not too much code, but would be less if done using say Scala.
+5. I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions. In the first version v1.0. In v1.1 I made minimal changes necessary to support more standard syntax. As other implementations, it just means adding ‘special cases’ into the evaluation function.
+
+4. This is largely ‘throwaway’ code, not for a serious project. I’m not sure if the C++ boilerplate is repaid by speed in a proper implementation. **Actually it isn’t.**  There is not too much code, but would be less if done using say Scala.
 
 5. In this codebase I’ve made no attempt at any tail call optimisation.
 
-### Prelude
 
 #### v1.0
 The ‘Build Your Own Lisp’ approach is interesting as it allows you to bootstrap your environment from a very basic Prelude, for example:
