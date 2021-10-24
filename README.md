@@ -99,7 +99,6 @@ I would definitely **not** use `std::variant` again. A poor alternative to sum t
 ### Example Output
 #### v1.1
 ```lisp
-`
 λ> defun (length xs) (if (== xs nil) (0) (+ 1 (length (tail xs))))
 lambda:
 	formals:(xs)
