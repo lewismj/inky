@@ -24,7 +24,7 @@ the parser to traverse the abstract syntax tree, producing instructions for an a
 Note:
 * The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity (albeit I would euphemistically call the code ‘experimental’).
 
-* Basic functionality is working. Though purely as demo/throwaway code; essentially a proof-of-concept or loose specification for a ‘real’ interpreter.
+* Basic functionality is working. Though purely as demo/throwaway code; essentially a proof-of-concept or loose specification for a ‘real’ interpreter. It does however support partial application of functions, higher order functions etc.
 
 ```lisp
 λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
