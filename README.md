@@ -18,8 +18,8 @@ Other implementations tend not to do this, and have the *eval* function treat op
 
 The simplest example is from Peter Novig’s [How to write a Lisp interpreter in Python][3]
 
-Each of these implementation is an Interpreter that produces results by traversal of the parser output (abstract syntax tree or equivalent).  The alternative is for
-the parser to post-process the abstract syntax machine, to produce instructions for some abstract stack (or ‘virtual’) machine. 
+Each of these is an Interpreter that produces results by traversal of the parser output (abstract syntax tree or equivalent).  The alternative is for
+the parser to traverse the abstract syntax tree, producing instructions for an abstract stack (or ‘virtual’) machine. 
 
 Note:
 * The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity (albeit I would euphemistically call the code ‘experimental’).
