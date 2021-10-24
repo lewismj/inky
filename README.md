@@ -10,7 +10,7 @@ There are a number of small Lisp interpreters available. Two with differing appr
 
 In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system.  
 
-If an expression has a type Q-Expression it won’t be eagerly evaluated. *lambda* itself is just a symbol in the global environment, whose value (S-Expression) happens to be a built-in function that is used to construct instances of a `Lambda`.   
+If an expression has a type Q-Expression it won’t be eagerly evaluated. *lambda* itself is just a symbol in the global environment, whose value (S-Expression) happens to be a built-in function that is used to construct instances of a `Lambda`.  
 
 There are pros-cons to the Q-Expression approach. It does lead to a very small subset of ‘built-in’ functions required. 
 
@@ -77,22 +77,23 @@ std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> va
 
 In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-I would definitely **not** use `std::variant` again. A poor alternative to sum types. The code bloat with `std::get` is horrific. Manual pattern matching on type (that I’m not convinced can be got rid of by sprinkling in a Visitor pattern.
-**Very, very slow**.
+I would definitely **not** use `std::variant` again. It isn’t a good alternative to sum types. It is very slow. There is lots of code bloat. These issues aren’t solved with ‘visitor’ patterns.
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
 3.  The interface to the parser is simple ` Either<Error,ValuePtr> parse(std::string_view in)`. The parser will return a smart pointer to a `Value` that represents the S-Expression or an Error.
 
-	One issue is that this carried over to the evaluation function `Either<Error,ValuePtr> eval(EnvironmentPtr env, ValuePtr val)` this does mean *runtime errors* are essentially treated as exceptions. 
+	One issue is that this carried over to the evaluation function `Either<Error,ValuePtr> eval(...)` this does mean *runtime errors* are essentially treated as exceptions. 
 
-	The error type inn `Either` in the parser should be `ParseError` the error type in the `eval` function could be `Uncaught Exception` or `FatalException` … whereas the runtime error should really be a `ErrorValue` and part of the discriminated union. Lisp functions themselves should be able to pattern match say on `Error` representing some error in computation.
+	* The error type  in the parser should be `ParseError`.
+	* The error type in the `eval` function could be `Uncaught 	Exception` or `FatalException`.
+	* A runtime error, could be some `ErrorValue` and should be part of the discriminated union. Lisp functions themselves should be able to pattern match say on `Error` representing some error in computation.
 
 4. In the first version, I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions.In v1.1 I made the changes necessary to support more standard syntax.  
 
 	There is a trade off: ‘special forms’ complicate the evaluation. However they simplify the syntax for the user. 
 
-5. This is largely ‘throwaway’ code, however very useful as a prototyping exercise and evaluating what would be necessary for a better, full implementation. 
+5. This is largely ‘throwaway’ code, however very useful as a prototyping exercise and evaluating what would be necessary for a better, full implementation.
 
 6. In this codebase I’ve made no attempt at any tail call optimisation.
 
