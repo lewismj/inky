@@ -151,7 +151,13 @@ namespace Inky::Lisp {
                               return Error{"define must have two arguments."};
                           }
                           v->cells[k] = maybe.right();
-                          v->cells[k + 1]->kind = Type::QExpression;
+                          if ( v->cells[k+1]->kind == Type::SExpression) v->cells[k+1]->kind = Type::QExpression;
+                          else {
+                              ExpressionPtr ys(new Expression());
+                              ys->insert(v->cells[k+1]);
+                              v->cells[k + 1] = Ops::makeQExpression(ys);
+                          }
+
                           k += 2;
                       } else if (Ops::hasSymbolName(v->cells[k], "if")) {
                           /* if (condition) (then) (else) */
