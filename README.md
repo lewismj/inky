@@ -92,6 +92,7 @@ I would definitely **not** use `std::variant` again. It isn’t a good alternati
 4. In the first version, I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions.In v1.1 I made the changes necessary to support more standard syntax.  
 
 	There is a trade off: ‘special forms’ complicate the evaluation. However they simplify the syntax for the user. 
+In addition the evaluation also has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
 
 5. This is largely ‘throwaway’ code, however very useful as a prototyping exercise and evaluating what would be necessary for a better, full implementation.
 
