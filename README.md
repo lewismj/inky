@@ -38,8 +38,16 @@ lambda:
 λ> product [2 2 2]
 8
 
-λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
-[3 4]
+λ> defun (foo x) ( (def (y) 1) (+ x y))
+lambda:
+	formals:(x)
+	body:((def (y) 1) (+ x y))
+
+λ> foo 20
+21
+
+λ> (+ 2 2) (+ 4 4)
+[4 8]
 
 λ> defun (inv x) (* -1 x)
 lambda:
@@ -123,8 +131,6 @@ lambda:
 λ> bar foo 1
 2
 λ> ; Using prelude ...
-λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
-[3 4]
 λ> defun (inv x) (* -1 x)
 lambda:
 	formals:(x)
