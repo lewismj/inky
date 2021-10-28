@@ -99,6 +99,7 @@ namespace Inky::Lisp {
 
         bool isNumeric(ValuePtr a);
         bool isExpression(ValuePtr a);
+        bool isEmptyExpression(ValuePtr a);
         bool hasSymbolName(ValuePtr a, std::string_view s);
     }
 

@@ -182,7 +182,6 @@ namespace Inky::Lisp {
               }
             }
 
-
             /* applicative order eval, reduced the arguments, call the fn. */
 
             if ( v->cells[0]->kind == Type::BuiltinFunction ) {
@@ -196,8 +195,16 @@ namespace Inky::Lisp {
                 return evalLambdaFunction(lambda,vp);
 
             }
-
-            return Error {fmt::format("expression evaluation failed, unknown type.")};
+            else {
+                /* Make a list of the results, if one result return head. */
+                ExpressionPtr xs(new Expression());
+                for (size_t k=0; k<v->cells.size(); k++) {
+                    if ( !Ops::isEmptyExpression(v->cells[k]))
+                        xs->insert(v->cells[k]);
+                }
+                if (xs->cells.size()==1) return xs->cells[0];
+                else return Ops::makeQExpression(xs);
+            }
         }
 
         Either<Error,ValuePtr> evalLambdaFunction(ValuePtr f, ValuePtr ar) {

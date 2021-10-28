@@ -11,12 +11,14 @@ namespace Inky::Lisp {
         cells.push_back(value);
     }
 
+    /*
     void Expression::move(ValuePtr value) {
         if (value->kind == Type::SExpression || value->kind == Type::QExpression) {
             ExpressionPtr v = std::get<ExpressionPtr>(value->var);
             std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
         }
     }
+     */
 
     ValuePtr Value::clone() {
         switch (kind) {
@@ -181,6 +183,15 @@ namespace Inky::Lisp {
         bool isNumeric(ValuePtr a) { return a->kind == Type::Integer || a->kind == Type::Double; }
 
         bool isExpression(ValuePtr a) { return a->kind == Type::SExpression || a->kind == Type::QExpression; }
+
+        bool isEmptyExpression(ValuePtr a) {
+            if (a->kind == Type::SExpression || a->kind == Type::QExpression) {
+               ExpressionPtr e = std::get<ExpressionPtr>(a->var);
+               return e->cells.empty();
+            }
+            return false;
+        }
+
 
         bool hasSymbolName(ValuePtr a, std::string_view s) {
             if ( a->kind != Type::Symbol ) return false;
