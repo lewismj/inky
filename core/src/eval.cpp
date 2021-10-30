@@ -146,7 +146,10 @@ namespace Inky::Lisp {
                            *  which is convenient, but 'not standard'.
                            */
                           k += 3; /* don't eval lambda function arguments on defn. */
-                      } else if (Ops::hasSymbolName(v->cells[k], "def") || Ops::hasSymbolName(v->cells[k], "define")) {
+                      } else if (Ops::hasSymbolName(v->cells[k], "def")
+                                || Ops::hasSymbolName(v->cells[k], "define")
+                                || Ops::hasSymbolName(v->cells[k],"="))
+                        {
                           if (k + 2 >= v->cells.size()) {
                               return Error{"define must have two arguments."};
                           }

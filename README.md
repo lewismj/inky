@@ -24,7 +24,7 @@ the parser to traverse the abstract syntax tree, producing instructions for an a
 Note:
 * The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity (albeit I would euphemistically call the code ‘experimental’).
 
-* Basic functionality is working. Though purely as demo/throwaway code; essentially a proof-of-concept or loose specification for a ‘real’ interpreter. It does however support partial application of functions, higher order functions etc.
+* Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc.  Example Lisp code is shown below:
 
 ```lisp
 λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
@@ -68,6 +68,36 @@ lambda:
 610
 λ> fib 25
 75025
+
+λ> ; Function with a local variable assigned.
+λ> defun (bar x) ( (= y 1) (+ x y))
+lambda:
+	formals:(x)
+	body:((= y 1) (+ x y))
+
+λ> ; check that we don't leak y definition into global scope.
+λ> bar 10
+11
+λ> bar 11
+12
+λ> y
+unbound symbol: y
+λ> ; Correct, y should only exist in the scope of the function as a local variable.
+
+λ> ; some list based operations....
+λ> def xs [ (+ 1 1) (+ 2 2) (+ 3 3) ]
+()
+λ> tail xs
+[(+ 2 2) (+ 3 3)]
+
+λ> ; Check eval on quoted expression is correct.
+λ> eval (tail xs)
+[4 6]
+
+λ> ; Correct, xs should still contain the 'code' the quoted (we use [] syntax) expressions.
+λ> xs
+[(+ 1 1) (+ 2 2) (+ 3 3)]
+λ> 
 ```
 
 ### Design
@@ -85,7 +115,7 @@ std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> va
 
 In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-I would definitely **not** use `std::variant` again. It isn’t a good alternative to sum types. It is very slow. There is lots of code bloat. These issues aren’t solved with ‘visitor’ patterns.
+I would probably **not** use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow. There is reasonable code bloat.  That said, I’m not convinced the alternative (if we ignore C-style union as just a bit messy) an OO hierarchy is any better. I prefer a somewhat more functional approach.
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
@@ -100,46 +130,12 @@ I would definitely **not** use `std::variant` again. It isn’t a good alternati
 4. In the first version, I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions.In v1.1 I made the changes necessary to support more standard syntax.  
 
 	There is a trade off: ‘special forms’ complicate the evaluation. However they simplify the syntax for the user. 
-In addition the evaluation also has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
+
+	In addition the evaluation also has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
 
 5. This is largely ‘throwaway’ code, however very useful as a prototyping exercise and evaluating what would be necessary for a better, full implementation.
 
-6. In this codebase I’ve made no attempt at any tail call optimisation.
-
-### Example Output
-#### v1.1
-```lisp
-λ> defun (length xs) (if (== xs nil) (0) (+ 1 (length (tail xs))))
-lambda:
-	formals:(xs)
-	body:(if (== xs nil) (0) (+ 1 (length (tail xs))))
-
-λ> def (nil) []
-()
-λ> length [a b c d]
-4
-λ> defun (foo x) (+ 1 x)
-lambda:
-	formals:(x)
-	body:(+ 1 x)
-
-λ> defun (bar f x) (f x)
-lambda:
-	formals:(f x)
-	body:(f x)
-
-λ> bar foo 1
-2
-λ> ; Using prelude ...
-λ> defun (inv x) (* -1 x)
-lambda:
-	formals:(x)
-	body:(* -1 x)
-
-λ> map inv [2 4 6 8]
-[-2 -4 -6 -8]
-λ> :q
-```
+6. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
 
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp
