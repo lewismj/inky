@@ -128,13 +128,14 @@ I would summarise this section as justification for always producing a throwaway
 The core design choices made were:
 
 1. Use of a discriminated union to hold S-Expression, i.e.
-```cpp
-std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> var;
-```
 
-In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
+	```cpp
+	std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> var;
+	```
 
-I would probably **not** use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow. There is reasonable code bloat.  That said, I’m not convinced the alternative (if we ignore C-style union as just a bit messy) an OO hierarchy is any better. I prefer a somewhat more functional approach.
+	In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
+
+	I would probably **not** use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow. There is reasonable code bloat.  	That said, I’m not convinced the alternative (if we ignore C-style union as just a bit messy) an OO hierarchy is any better. I prefer a somewhat more 		functional approach.
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
