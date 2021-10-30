@@ -153,7 +153,7 @@ The core design choices made were:
 
 5. This is largely ‘throwaway’ code, however very useful as a prototyping exercise and evaluating what would be necessary for a better, full implementation.
 
-6. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
+6. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. A better implementation would address that, possibly via trampolining or introducing a stack machine (rather than AST walking) interpreter.
 
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp
