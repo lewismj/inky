@@ -24,7 +24,29 @@ the parser to traverse the abstract syntax tree, producing instructions for an a
 Note:
 * The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity (albeit I would euphemistically call the code ‘experimental’).
 
-* Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc.  Example Lisp code is shown below:
+* Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc. 
+
+* The core functionality being defined within the Lisp prelude itself (i.e. we do not implement everything via builtin functions, but effectively *very loosely* we implement an extended untyped λ-calculus engine and the Lisp prelude builds on that.
+
+### Prelude & Example Output
+
+```lisp
+`
+; empty list, true & false.
+
+def (nil) []
+def (true) 1
+def (false) 0
+
+; list functions, map, foldl, etc.
+defun (len xs) (if (== xs nil) (0) (+ 1 (len (tail xs))))
+defun (fst xs) ( eval (head xs) )
+defun (drop n xs) ( if (== n 0) (xs) (drop (- n 1) (tail xs)))
+defun (foldl f z xs) (if (== xs nil) [z] (foldl f (f z (fst xs)) (tail xs)))
+defun (map f xs) ( (if (== xs nil) (nil) (join (list (f (fst xs))) (map f (tail xs)))))
+defun (filter f xs) (if (== xs nil) (nil) (join (if (f (fst xs)) (head xs) (nil)) (filter f (tail xs))))
+```
+
 
 ```lisp
 λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
