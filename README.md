@@ -20,7 +20,7 @@ Note:
 
 * Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc.
 
-* The core functionality being defined within the Lisp prelude itself (i.e. we do not implement everything via builtin functions, but effectively *very loosely* we implement an extended untyped λ-calculus engine and the Lisp prelude builds on that.
+* The core functionality being defined within the Lisp prelude itself (i.e. we do not implement everything via builtin functions). Effectively (*very loosely*) this implements an extended untyped λ-calculus engine and the Lisp prelude builds on that.
 
 ### Prelude & Example Output
 
