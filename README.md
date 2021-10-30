@@ -8,21 +8,15 @@ This project is an implementation of Greenspun’s tenth rule. It is not meant t
 
 There are a number of small Lisp interpreters available. Two with differing approaches are: [Build our Own Lisp][1] & [Wisp][2].
 
-In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system.  
+In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system. This does lead to a conceptually neat λ-calculus engine that doesn't require the 'special forms' of other implementations. 
+This is achieved at the expense of some non-standard syntax.
 
-If an expression has a type Q-Expression it won’t be eagerly evaluated. *lambda* itself is just a symbol in the global environment, whose value (S-Expression) happens to be a built-in function that is used to construct instances of a `Lambda`.  
+The simplest example of Lisp interpreter that I could find is from Peter Novig’s article [How to write a Lisp interpreter in Python][3]
 
-There are pros-cons to the Q-Expression approach. It does lead to a very small subset of ‘built-in’ functions required. 
-
-Other implementations tend not to do this, and have the *eval* function treat operations such as *lambda*, *defun*, etc.  as a ’special’ forms. The set of special forms is generally small; but strictly speaking unnecessary (if you adopt syntax to represent ‘quoted expressions’).
-
-The simplest example is from Peter Novig’s [How to write a Lisp interpreter in Python][3]
-
-Each of these is an Interpreter that produces results by traversal of the parser output (abstract syntax tree or equivalent).  The alternative is for
-the parser to traverse the abstract syntax tree, producing instructions for an abstract stack (or ‘virtual’) machine. 
+Each of these is an Interpreter that produces results by traversal of an abstract syntax tree. The obvious following step would be to implement the evaluator using a stack machine.
 
 Note:
-* The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity (albeit I would euphemistically call the code ‘experimental’).
+* The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity.
 
 * Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc. 
 
@@ -152,11 +146,7 @@ I would probably **not** use `std::variant` again. It isn’t a good alternative
 	* The error type in the `eval` function could be `Uncaught 	Exception` or `FatalException`.
 	* A runtime error, could be some `ErrorValue` and should be part of the discriminated union. Lisp functions themselves should be able to pattern match say on `Error` representing some error in computation.
 
-4. In the first version, I followed the ‘Build Your Own Lisp’ approach of adopting a ‘special syntax’ for Lambda expressions.In v1.1 I made the changes necessary to support more standard syntax.  
-
-	There is a trade off: ‘special forms’ complicate the evaluation. However they simplify the syntax for the user. 
-
-	In addition the evaluation also has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
+4. The `eval` function has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
 
 5. This is largely ‘throwaway’ code, however very useful as a prototyping exercise and evaluating what would be necessary for a better, full implementation.
 
