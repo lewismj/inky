@@ -67,29 +67,9 @@ lambda:
 
 λ> foo 20
 21
+; Note 'def' is a shortcut for 'define as global here', 
+; the assignment operator '=' is used for local variables (see below).
 
-λ> (+ 2 2) (+ 4 4)
-[4 8]
-
-λ> defun (inv x) (* -1 x)
-lambda:
-	formals:(x)
-	body:(* -1 x)
-
-
-λ> map inv [2 4 6 8]
-[-2 -4 -6 -8]
-
-
-λ> ; Slow Finbonacci
-λ>  defun (fib n) (if (< n 2) (n) (+  (fib (- n 2)) (fib (- n 1)) ))
-
-λ> fib 10
-55
-λ> fib 15
-610
-λ> fib 25
-75025
 
 λ> ; Function with a local variable assigned.
 λ> defun (bar x) ( (= y 1) (+ x y))
@@ -120,6 +100,29 @@ unbound symbol: y
 λ> xs
 [(+ 1 1) (+ 2 2) (+ 3 3)]
 λ> 
+
+λ> (+ 2 2) (+ 4 4)
+[4 8]
+
+λ> defun (inv x) (* -1 x)
+lambda:
+	formals:(x)
+	body:(* -1 x)
+
+
+λ> map inv [2 4 6 8]
+[-2 -4 -6 -8]
+
+
+λ> ; Slow Finbonacci
+λ>  defun (fib n) (if (< n 2) (n) (+  (fib (- n 2)) (fib (- n 1)) ))
+
+λ> fib 10
+55
+λ> fib 15
+610
+λ> fib 25
+75025
 ```
 
 ### Design
