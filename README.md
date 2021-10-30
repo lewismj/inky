@@ -18,7 +18,7 @@ Each of these is an Interpreter that produces results by traversal of an abstrac
 Note:
 * The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity.
 
-* Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc. 
+* Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc.
 
 * The core functionality being defined within the Lisp prelude itself (i.e. we do not implement everything via builtin functions, but effectively *very loosely* we implement an extended untyped λ-calculus engine and the Lisp prelude builds on that.
 
@@ -135,7 +135,9 @@ The core design choices made were:
 
 	In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-	I would probably **not** use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow. There is reasonable code bloat.  	That said, I’m not convinced the alternative (if we ignore C-style union as just a bit messy) an OO hierarchy is any better. I prefer a somewhat more 		functional approach.
+	I would probably **not** use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow. There is reasonable code bloat. 
+
+	I’m not convinced the alternative (if we ignore C-style union as just a bit messy) an object oriented hierarchy is any better. 
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
