@@ -114,7 +114,7 @@ namespace Inky::Lisp {
         ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
         if (expression->cells.size() != 1) return Error {"tail function passed more than one argument."};
 
-        ValuePtr list = expression->cells[0];
+        ValuePtr list = expression->cells[0]->clone();
         ExpressionPtr xs = std::get<ExpressionPtr>(list->var);
 
         if ( xs->cells.empty() )  return Error { "tail of empty list."};
@@ -129,7 +129,9 @@ namespace Inky::Lisp {
         ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
         if (expression->cells.size() != 1) return Error { "eval function passed more than one argument."};
 
-        ValuePtr xs = expression->cells[0];
+        /* clone, if we have def (xs) [ ex1 ex2 ... exn ] we don't want eval to change xs, should be immutable.
+         * the result can be defined or assigned = */
+        ValuePtr xs = expression->cells[0]->clone();
         xs->kind = Type::SExpression;
         return eval(e, xs);
     }
