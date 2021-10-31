@@ -8,26 +8,27 @@ This project is an implementation of Greenspun’s tenth rule. It is not meant t
 
 There are a number of small Lisp interpreters available. Two with differing approaches are: [Build our Own Lisp][1] & [Wisp][2].
 
-In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system. This does lead to a conceptually neat λ-calculus engine that doesn't require the 'special forms' of other implementations. 
-This is achieved at the expense of some non-standard syntax.
+In the ‘Build Your Own Lisp’ version, there is a special type of S-Expression called the Q-Expression (*quoted* expression). This replaces and is a simplification of the macro system. This does lead to a conceptually neat λ-calculus engine that doesn't require the 'special forms' of other implementations. This is achieved at the expense of some non-standard syntax.
 
 The simplest example of Lisp interpreter that I could find is from Peter Novig’s article [How to write a Lisp interpreter in Python][3]
 
 Each of these is an Interpreter that produces results by traversal of an abstract syntax tree. The obvious following step would be to implement the evaluator using a stack machine.
 
 Note:
-* The first version v1.0 implemented the ‘special syntax’ for a minimal *Eval* function. v1.1 extend the evaluation routines to deal with ‘special forms’. So flipping between the two versions you can see the trade-off in code complexity.
+* The first version **v1.0** implements a syntax `[ expression ]` for representing quoted expressions. This allows the core `eval` function to be as simple as possible.
+	The downside is a user has to remember special syntax (for representing function arguments etc.).
+	At the cost of complicating the `eval` (and should be a macro table) I implemented (**v1.2**) handlers for ‘special forms’. The `eval` function has to know not to eagerly evaluate function arguments and the like. The result is a more conventional Lisp syntax. I retain `[ list ]` syntax for lists as I think this is more natural looking.
 
 * Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc.
 
 * The core functionality being defined within the Lisp prelude itself (i.e. we do not implement everything via builtin functions, but effectively *very loosely* we implement an extended untyped λ-calculus engine and the Lisp prelude builds on that.
 
-### Prelude & Example Output
+### Usage
+
+#### Prelude
+The builtin functions provide the basic `head`, `tail`, `join`, `eval` etc. functions. However the language constructs themselves should generally be built in the language from these builtin functions.
 
 ```lisp
-`
-; empty list, true & false.
-
 def (nil) []
 def (true) 1
 def (false) 0
@@ -41,46 +42,28 @@ defun (map f xs) ( (if (== xs nil) (nil) (join (list (f (fst xs))) (map f (tail 
 defun (filter f xs) (if (== xs nil) (nil) (join (if (f (fst xs)) (head xs) (nil)) (filter f (tail xs))))
 ```
 
-
+#### Simple list and other expressions
 ```lisp
-λ> filter (lambda (x) (> x 2)) [ -1 0 1 2 3 4]
+λ> filter (lambda (x) (> x 2)) [-1 0 1 2 3 4]
 [3 4]
-
+ 
 λ> defun (product xs) (foldl * 1 xs)
-lambda:
-	formals:(xs)
-	body:(foldl * 1 xs)
-
+	lambda:
+       formals:(xs)
+       body:(foldl * 1 xs)
+   
 λ> product [2 2 2]
 8
 
-λ> defun (foo x) ( (def (y) 1) (+ x y))
-lambda:
-	formals:(x)
-	body:((def (y) 1) (+ x y))
+λ> defun (inv x) (* -1 x)
+  lambda:
+      formals:(x)
+      body:(* -1 x)
+  
+  
+λ> map inv [2 4 6 8]
+[-2 -4 -6 -8]
 
-λ> foo 20
-21
-; Note 'def' is a shortcut for 'define as global here', 
-; the assignment operator '=' is used for local variables (see below).
-
-
-λ> ; Function with a local variable assigned.
-λ> defun (bar x) ( (= y 1) (+ x y))
-lambda:
-	formals:(x)
-	body:((= y 1) (+ x y))
-
-λ> ; check that we don't leak y definition into global scope.
-λ> bar 10
-11
-λ> bar 11
-12
-λ> y
-unbound symbol: y
-λ> ; Correct, y should only exist in the scope of the function as a local variable.
-
-λ> ; some list based operations....
 λ> def xs [ (+ 1 1) (+ 2 2) (+ 3 3) ]
 ()
 λ> tail xs
@@ -97,35 +80,72 @@ unbound symbol: y
 
 λ> (+ 2 2) (+ 4 4)
 [4 8]
+```
 
-λ> defun (inv x) (* -1 x)
+#### Variable scope
+```lisp
+λ> ; Function with a local variable assigned.
+λ> defun (bar x) ( (= y 1) (+ x y))
 lambda:
 	formals:(x)
-	body:(* -1 x)
+	body:((= y 1) (+ x y))
 
+λ> ; check that we don't leak y definition into global scope.
+λ> bar 10
+11
+λ> bar 11
+12
+λ> y
+unbound symbol: y
+λ> ; Correct, y should only exist in the scope of the function as a local variable.
+```
 
-λ> map inv [2 4 6 8]
-[-2 -4 -6 -8]
+#### Partial & Higher order functions
+Since a Lambda has an environment scope of its own, we can easily support partial function application. Example:
 
+```lisp
+λ> defun (add x y) (+ x y)
+lambda:
+	formals:(x y)
+	body:(+ x y)
 
-λ> ; Slow Finbonacci
-λ>  defun (fib n) (if (< n 2) (n) (+  (fib (- n 2)) (fib (- n 1)) ))
+λ> (add 2 3)
+5
 
-λ> fib 10
-55
-λ> fib 15
-610
-λ> fib 25
-75025
+; N.B. We are NOT using the 'defun' syntax here.
+; 'add' is a lambda that has 'add' as its associated symbol.
+; Here we're defining 'plusOne' symbol the result of (add 1)
+; which is a partially applied function. 
+λ> def (plusOne) (add 1)
+()
+λ> plusOne
+lambda:
+	formals:(y)
+	body:(+ x y)
+
+λ> plusOne 1
+2
+λ> plusOne 2
+3
+
+λ> defun (adder x) (+ 1 x)
+lambda:
+	formals:(x)
+	body:(+ 1 x)
+
+λ> defun (identity f x) (f x)
+lambda:
+	formals:(f x)
+	body:(f x)
+λ> identity adder 1
+2
 ```
 
 ### Design
 
-I would summarise this section as justification for always producing a throwaway prototype. Not (as so often happens) starting with an R&D effort and ‘iterating’ in a phoney agile way. 
+I would summarise this section as justification for always producing a throwaway prototype. I like to rapidly prototype *but* throwaway that prototype. I think it is an invaluable exercise.
 
- If building new systems, I always like to rapidly prototype *but* throwaway the prototype. I think its invaluable part of building new software.
-
-The core design choices made were:
+In prototyping there are a few design decisions that I would re-visit; to establish if I would make the same choices for a *real* implementation, these are:
 
 1. Use of a discriminated union to hold S-Expression, i.e.
 
@@ -135,11 +155,12 @@ The core design choices made were:
 
 	In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-	I would probably **not** use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow. There is reasonable code bloat. 
+	I would probably not use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow.  It introduces some boilerplate that complicates some implementation details. 
 
-	I’m not convinced the alternative (if we ignore C-style union as just a bit messy) an object oriented hierarchy is any better. 
+	I’m not convinced the alternative (to variant/union): an object oriented hierarchy would ultimately produce a cleaner design.
 
-2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
+2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I  gave up on using Boost’s Spirit parser.*
+	Probably worth investigating combinator alternatives to Spirit. I would **not** use Boost Spirit.
 
 3. The `eval` function has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
 
