@@ -200,6 +200,11 @@ The algorithm for evaluating expressions is simple,
 
 ### Background
 
+*The structure and Interpretation of Computer Programs* by Harold Abelson and Gerald Jay Sussman with Julie Sussman.
+I highly recommend this book. A great insight into Lisp/Scheme and how you would start building your own interpreters
+and compilers. I've not (yet) found a more modern reference on compilers that matches *The Dragon Book*.
+
+
 ![](https://github.com/lewismj/inky/blob/main/doc/sicp.jpg)
 
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
