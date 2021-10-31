@@ -166,6 +166,7 @@ In prototyping there are a few design decisions that I would re-visit; to establ
 
 4. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
 
+
 ### How does evaluation work?
 
 Suppose we have an expression of the type:
@@ -182,6 +183,7 @@ Finally, in the function call 3 is supplied for ‘x’, so we are left with `(+
 The algorithm for evaluating expressions is simple,
 
 1. If we have a primitive type it evaluates as itself, i.e. 4 evaluates to 4.
+	Quoted expressions also just evaluate to themselves, the `eval` built-in is used to evaluate the quoted expression.  It simply flips its type kind to S-Expression.
 
 2. Given an S-Expression:
 	1. Loop over all the sub-expressions and reduced them if we can.
