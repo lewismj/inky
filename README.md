@@ -198,7 +198,12 @@ The algorithm for evaluating expressions is simple,
 
 	Basically we don’t try reducing (evaluating) `(x)` in the Loop 2.1; since it won’t exist until bound by function call.
 
+### Background
+
+![](https://github.com/lewismj/inky/blob/main/doc/sicp.jpg)
+
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp
 [3]:	https://norvig.com/lispy.html
 [4]:	https://github.com/com-lihaoyi/fastparse
+[5]:	https://github.com/lewismj/inky/blob/main/doc/sicp.jpg?raw=true "sicp.jpg"
