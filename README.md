@@ -15,7 +15,7 @@ The simplest example of Lisp interpreter that I could find is from Peter Novig�
 Each of these is an Interpreter that produces results by traversal of an abstract syntax tree. The obvious following step would be to implement the evaluator using a stack machine.
 
 Note:
-* The solution started *v1.0* implementing a special syntax `[expr]` to represent quoted expressions. These are expressions that aren’t eagerly evaluated. In *v1.2* onward that is dropped and more conventional Lisp syntax adopted (at the expense of some complications in the `eval` function). A proper Lisp *should* have a macro expansion table. This hasn’t been implemented.
+* The solution started *v1.0* implementing a special syntax `[expr]` to represent quoted expressions. These are expressions that aren’t eagerly evaluated. In *v1.2* onward that is dropped and more conventional Lisp syntax adopted (at the expense of some complications in the `eval` function). A proper Lisp *should* have a macro expansion table.
 
 * Basic functionality is working. Just proof of concept code, it does support partial function application, higher order functions,  etc.
 
@@ -165,6 +165,7 @@ In prototyping there are a few design decisions that I would re-visit; to establ
 4. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
 
 
+
 ### How does evaluation work?
 
 Suppose we have an expression of the type:
@@ -201,6 +202,7 @@ The algorithm for evaluating expressions is simple,
 	When evaluating an S-Expression, the key thing is to reduce the expressions first. However, don’t try to reduce things like function arguments as these won’t be bound until invoked.
 
 	The implementation `eval.cpp` shows that we skip ahead in the loop if we encounter things like a function definition. 
+
 
 
 ### Background
