@@ -187,20 +187,29 @@ The algorithm for evaluating expressions is simple,
 	1. Loop over all the sub-expressions and reduced them if we can.
 
 		So in the above S-Expression:
-		1. We don’t evaluate the argument *x* until the function is invoked(*)*
-		2. We can evaluate `(+ 2 3)` and `(+ 1 2)` 
+		1. We don’t evaluate the argument *x* until the function is invoked.
+		2. Evaluate `(+ 2 3)` and `(+ 1 2)` 
+
+			The result of looping over the sub-expressions would be:
+
+			```lisp
+			(lambda(x) (+ x 5)) 3		
+			```
 
 	2. Once sub-expressions have been reduced (evaluated) then evaluate function calls; or return the list of results if no functions calls are made.
 
-	Key to evaluating is know to reduce. The implementation `eval.cpp` shows that we skip ahead in the loop if we encounter things like a function definition. 
+	When evaluating an S-Expression, the key thing is to reduce the expressions first. However, don’t try to reduce things like function arguments as these won’t be bound until invoked.
 
-	Basically we don’t try reducing (evaluating) `(x)` in the Loop 2.1; since it won’t exist until bound by function call.
+	The implementation `eval.cpp` shows that we skip ahead in the loop if we encounter things like a function definition. 
 
 ### Background
 
 *The structure and Interpretation of Computer Programs* by Harold Abelson and Gerald Jay Sussman with Julie Sussman.
+
 I highly recommend this book. A great insight into Lisp/Scheme and how you would start building your own interpreters
-and compilers. I've not (yet) found a more modern reference on compilers that matches *The Dragon Book*.
+and compilers.
+
+ I've not (yet) found a more modern reference on compilers that matches *The Dragon Book*.
 
 
 ![][image-1]
