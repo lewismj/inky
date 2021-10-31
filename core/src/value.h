@@ -17,7 +17,7 @@ namespace Inky::Lisp {
     struct Environment;
     struct Value;
 
-    struct Error {
+    struct ParseError {
         std::string message;
         struct Location {
             size_t begin;
@@ -26,22 +26,21 @@ namespace Inky::Lisp {
         Location location;
     };
 
+    struct LispError {
+        std::string message;
+    };
+
     /* Type definitions . */
     typedef std::shared_ptr<Environment> EnvironmentPtr;
     typedef std::shared_ptr<Value> ValuePtr;
+    typedef std::shared_ptr<LispError> LispErrorPtr;
 
     /* Builtin function type. */
-    typedef std::function<Either<Error,ValuePtr>(EnvironmentPtr,ValuePtr)> BuiltinFunction;
+    typedef std::function<ValuePtr(EnvironmentPtr, ValuePtr)> BuiltinFunction;
 
     struct Expression {
         /* Insert a value into this expression. */
         void insert(ValuePtr value);
-
-        /*
-         * Move the cell of the value (if it is an expression/list) into this one,
-         * otherwise do nothing.
-         */
-        void move(ValuePtr value);
 
         std::deque<ValuePtr> cells; /* An S-Expression is a list of cells, that contain values. */
     };
@@ -57,6 +56,7 @@ namespace Inky::Lisp {
 
 
     enum class Type { /* Used for type checking value of Lisp element. */
+        Error,
         Integer,
         Double,
         String,
@@ -82,7 +82,7 @@ namespace Inky::Lisp {
         Type kind; /* Convenient flag for type checking. */
 
         /* The variant that the value can hold. */
-        std::variant<long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> var;
+        std::variant<LispErrorPtr,long,double,std::string,BuiltinFunction,LambdaPtr,ExpressionPtr> var;
     };
 
     namespace Ops { /* Define utilities for constructing Values. */
@@ -96,7 +96,9 @@ namespace Inky::Lisp {
         ValuePtr makeSExpression();
         ValuePtr makeQExpression(ExpressionPtr expression);
         ValuePtr makeQExpression();
+        ValuePtr makeError(const std::string& s);
 
+        bool isError(ValuePtr a);
         bool isNumeric(ValuePtr a);
         bool isExpression(ValuePtr a);
         bool isEmptyExpression(ValuePtr a);
@@ -108,5 +110,7 @@ namespace Inky::Lisp {
     std::ostream& operator<<(std::ostream& os, Type kind);
     std::ostream& operator<<(std::ostream& os, LambdaPtr lambda);
     std::ostream& operator<<(std::ostream& os, ExpressionPtr expression);
-    std::ostream& operator<<(std::ostream& os, Error error);
+    std::ostream& operator<<(std::ostream& os, ParseError error);
+    std::ostream& operator<<(std::ostream& os, LispErrorPtr error);
+
 }

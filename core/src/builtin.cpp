@@ -12,8 +12,8 @@
 namespace Inky::Lisp {
 
 
-    Either<Error,ValuePtr> builtin_lambda(EnvironmentPtr env, ValuePtr p) {
-        if ( !Ops::isExpression(p) ) return Error { "lambda fn, formals & body must be [] expression."};
+    ValuePtr builtin_lambda(EnvironmentPtr env, ValuePtr p) {
+        if ( !Ops::isExpression(p) ) Ops::makeError("lambda fn, formals & body must be [] expression.");
         ExpressionPtr expression = std::get<ExpressionPtr>(p->var);
 
         /*
@@ -22,18 +22,18 @@ namespace Inky::Lisp {
          */
         if ( expression->cells.size() != 2 ) {
             std::string message = fmt::format("lambda expects 2 arguments formals & body, received: {}",expression->cells.size());
-            return Error {message };
+            return Ops::makeError(message);
         }
 
         /* Formals must be expression containing symbols. */
         ValuePtr formals = expression->cells[0]; expression->cells.pop_front();
         ValuePtr body = expression->cells[0];  expression->cells.pop_front();
 
-        if ( !Ops::isExpression(formals) ) return Error { "formals must be an expression containing symbols for arguments."};
+        if ( !Ops::isExpression(formals) ) return Ops::makeError("formals must be an expression containing symbols for arguments.");
         ExpressionPtr formalExp = std::get<ExpressionPtr>(formals->var);
         /* Do type check that they are all symbols. */
         for (const auto& c: formalExp->cells) {
-            if (c->kind != Type::Symbol) return Error {"lambda function formal must be symbol."};
+            if (c->kind != Type::Symbol) return Ops::makeError("lambda function formal must be symbol.");
         }
 
         EnvironmentPtr e(new Environment()); /* Eval should set the outer scope? */
@@ -41,28 +41,26 @@ namespace Inky::Lisp {
         return Ops::makeFunction(std::make_shared<Lambda>(Lambda{ formals, body, e }));
     }
 
-
-
-    Either<Error,ValuePtr> builtin_define(EnvironmentPtr e, ValuePtr a, bool insertIntoOuterScope) {
-        if ( !Ops::isExpression(a) ) return Error { "define parameters must be [] expressions." };
+    ValuePtr builtin_define(EnvironmentPtr e, ValuePtr a, bool insertIntoOuterScope) {
+        if ( !Ops::isExpression(a) ) return Ops::makeError("define parameters must be [] expressions.");
         ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
 
-        if (expression->cells.empty()) return Error { "define missing arguments."};
+        if (expression->cells.empty()) return Ops::makeError("define missing arguments.");
         ValuePtr first = expression->cells[0];
-        if ( !Ops::isExpression(first)) return Error {"define argument must be an expression."};
+        if ( !Ops::isExpression(first)) return Ops::makeError("define argument must be an expression.");
         ExpressionPtr symbols = std::get<ExpressionPtr>(first->var) ;
 
         if ( symbols->cells.size() != expression->cells.size() -1 ) {
                 std::string message = fmt::format("unexpected number of arguments for symbols, received {}, expected {}. ",
                                                   symbols->cells.size(), expression->cells.size() - 1);
-                return Error { message };
+                return Ops::makeError(message);
         };
 
         for (size_t i=0; i<symbols->cells.size(); i++) {
             auto key = symbols->cells[i];
             if ( key->kind != Type::Symbol ) {
                 auto tmp = eval(e,key);
-                if (tmp.isLeft()) return tmp.left();
+                if (Ops::isError(tmp))  return tmp;
             }
             auto val = expression->cells[i+1] ;
 
@@ -75,31 +73,29 @@ namespace Inky::Lisp {
         return Ops::makeSExpression();
     }
 
-    Either<Error,ValuePtr> builtin_def(EnvironmentPtr e, ValuePtr a) {
+    ValuePtr builtin_def(EnvironmentPtr e, ValuePtr a) {
         return builtin_define(e,a,true);
     }
 
 
-    Either<Error,ValuePtr> builtin_put(EnvironmentPtr e, ValuePtr a) {
+    ValuePtr builtin_put(EnvironmentPtr e, ValuePtr a) {
         return builtin_define(e,a,false);
     }
 
-
-
-    Either<Error,ValuePtr> builtin_list(EnvironmentPtr , ValuePtr a) {
+    ValuePtr builtin_list(EnvironmentPtr , ValuePtr a) {
         a->kind = Type::QExpression;
         return a;
     }
 
-    Either<Error,ValuePtr> builtin_head(EnvironmentPtr , ValuePtr a) {
-        if ( !Ops::isExpression(a) )  return Error {"argument to head function must be list expression." };
+    ValuePtr builtin_head(EnvironmentPtr , ValuePtr a) {
+        if ( !Ops::isExpression(a) )  return Ops::makeError("argument to head function must be list expression.");
         ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
-        if (expression->cells.size() != 1) return Error { "head function passed more than one argument."};
+        if (expression->cells.size() != 1) return Ops::makeError("head function passed more than one argument.");
 
         ValuePtr list = expression->cells[0];
         ExpressionPtr xs = std::get<ExpressionPtr>(list->var);
 
-        if ( xs->cells.empty() ) return Error { "head of empty list."};
+        if ( xs->cells.empty() ) return Ops::makeError("head of empty list.");
             //return Ops::makeQExpression(); /* head of an empty list is empty list, could be error?*/
 
         ValuePtr head = xs->cells[0];
@@ -109,25 +105,25 @@ namespace Inky::Lisp {
         return Ops::makeQExpression(result);
     }
 
-    Either<Error,ValuePtr> builtin_tail(EnvironmentPtr , ValuePtr a) {
-        if ( !Ops::isExpression(a) )  return Error { "argument to tail function must be list expression." };
+    ValuePtr builtin_tail(EnvironmentPtr , ValuePtr a) {
+        if ( !Ops::isExpression(a) )  return Ops::makeError("argument to tail function must be list expression.");
         ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
-        if (expression->cells.size() != 1) return Error {"tail function passed more than one argument."};
+        if (expression->cells.size() != 1) return Ops::makeError("tail function passed more than one argument.");
 
         ValuePtr list = expression->cells[0]->clone();
         ExpressionPtr xs = std::get<ExpressionPtr>(list->var);
 
-        if ( xs->cells.empty() )  return Error { "tail of empty list."};
+        if ( xs->cells.empty() )  return Ops::makeError("tail of empty list.");
             //return Ops::makeQExpression(); /* tail of empty list is empty list, could be error? */
         xs->cells.pop_front(); /* Remove the head. */
 
         return Ops::makeQExpression(xs);
     }
 
-    Either<Error,ValuePtr> builtin_eval(EnvironmentPtr e, ValuePtr a) {
-        if (!Ops::isExpression(a)) return Error {"argument to eval function must be list expression."};
+    ValuePtr builtin_eval(EnvironmentPtr e, ValuePtr a) {
+        if (!Ops::isExpression(a)) return Ops::makeError("argument to eval function must be list expression.");
         ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
-        if (expression->cells.size() != 1) return Error { "eval function passed more than one argument."};
+        if (expression->cells.size() != 1) return Ops::makeError("eval function passed more than one argument.");
 
         /* clone, if we have def (xs) [ ex1 ex2 ... exn ] we don't want eval to change xs, should be immutable.
          * the result can be defined or assigned = */
@@ -136,8 +132,8 @@ namespace Inky::Lisp {
         return eval(e, xs);
     }
 
-    Either<Error,ValuePtr> builtin_join(EnvironmentPtr e, ValuePtr a) {
-        if (!Ops::isExpression(a)) return Error {"argument to join function must be list expression."};
+    ValuePtr builtin_join(EnvironmentPtr e, ValuePtr a) {
+        if (!Ops::isExpression(a)) return Ops::makeError("argument to join function must be list expression.");
         ExpressionPtr expression = std::get<ExpressionPtr>(a->var);
         if (expression->cells.empty()) return a;
 
@@ -173,8 +169,7 @@ namespace Inky::Lisp {
         return a/b;
     }
 
-
-    Either<Error, ValuePtr> builtin_op(EnvironmentPtr /* ignore. */, ValuePtr vp, numeric_operators nop) {
+    ValuePtr builtin_op(EnvironmentPtr /* ignore. */, ValuePtr vp, numeric_operators nop) {
         /*
          * 1. check that we have cells to reduce.
          * 2. runtime type check:
@@ -189,12 +184,12 @@ namespace Inky::Lisp {
         ExpressionPtr v = std::get<ExpressionPtr>(vp->var);
 
         if (v->cells.empty()) {
-            return Error{"runtime error, no cells to reduce"};
+            return Ops::makeError("runtime error, no cells to reduce");
         }
 
         bool is_double = false;
         for (const auto &c : v->cells) {
-            if (!Ops::isNumeric(c)) return Error{"runtime_error, +,-,/,* reduce non numeric."};
+            if (!Ops::isNumeric(c)) return Ops::makeError("runtime_error, +,-,/,* reduce non numeric.");
             if (c->kind == Type::Double) is_double = true;
         }
 
@@ -223,7 +218,7 @@ namespace Inky::Lisp {
                     accumulator = nop.f(std::get<long>(accumulator), std::get<long>(c->var));
                 }
             } catch ( const std::runtime_error& e) {
-                return Error {e.what()} ;
+                return Ops::makeError(e.what());
             }
         }
 
@@ -238,14 +233,14 @@ namespace Inky::Lisp {
 
     struct numeric_cmp { integer_op  f; double_op   g; };
 
-    Either<Error,ValuePtr> builtin_cmp(EnvironmentPtr, ValuePtr a, numeric_cmp op) {
-        if (! Ops::isExpression(a) ) return Error { "expected expression  'cmp a b'"};
+    ValuePtr builtin_cmp(EnvironmentPtr, ValuePtr a, numeric_cmp op) {
+        if (! Ops::isExpression(a) ) return Ops::makeError("expected expression  'cmp a b'");
         ExpressionPtr xs = std::get<ExpressionPtr>(a->var);
-        if ( xs->cells.size() != 2) return Error { "error cmp operator, expected 2 arguments."};
+        if ( xs->cells.size() != 2) return Ops::makeError("error cmp operator, expected 2 arguments.");
 
         bool isDouble = false;
         for (const auto& arg: xs->cells) {
-            if ( !Ops::isNumeric(arg) ) return Error { "error, cmp argument non-numeric."};
+            if ( !Ops::isNumeric(arg) ) return Ops::makeError("error, cmp argument non-numeric.");
             if ( arg->kind == Type::Double) isDouble = true;
         }
 
@@ -280,14 +275,12 @@ namespace Inky::Lisp {
     auto builtin_gte = [](EnvironmentPtr e, ValuePtr v) { return builtin_cmp(e,v, {gte<long>,gte<double>});};
 
 
-
+    /* n.b. Builtin add/subtract don't act as unary operators. */
     auto builtin_add = [](EnvironmentPtr e, ValuePtr v)      {
-       /* TODO - Should this allow unary operator too; so + [-1] = [1]  ??? */
         return builtin_op(e,v, { add<long>, add<double> });
     };
 
     auto builtin_subtract = [](EnvironmentPtr e, ValuePtr v) {
-        /* TODO - Should allow unary operator too; so - [+1] = [1] ??? */
         return builtin_op(e,v, { subtract<long>, subtract<double> });
     };
 
@@ -314,8 +307,13 @@ namespace Inky::Lisp {
         }
 
        switch (a->kind) {
-            case Type::Integer:
-            case Type::Double:
+           case Type::Error: {
+               LispErrorPtr x = std::get<LispErrorPtr>(a->var);
+               LispErrorPtr y = std::get<LispErrorPtr>(b->var);
+               return x->message == y->message;
+           }
+           case Type::Integer:
+           case Type::Double:
                 return true; /* Case dealt with above, added to avoid compiler warning. */
            case Type::String:
            case Type::Symbol:
@@ -345,10 +343,10 @@ namespace Inky::Lisp {
 
     bool notEquals(ValuePtr a, ValuePtr b) { return ! equals(a,b); }
 
-    Either<Error,ValuePtr> builtin_eq(EnvironmentPtr e, ValuePtr a) {
-        if ( !Ops::isExpression(a) ) return Error {"eq expecting an expression."};
+    ValuePtr builtin_eq(EnvironmentPtr e, ValuePtr a) {
+        if ( !Ops::isExpression(a) ) return Ops::makeError("eq expecting an expression.");
         ExpressionPtr xs = std::get<ExpressionPtr>(a->var);
-        if ( xs->cells.size() != 2) return Error {"eq operator expecting two arguments."};
+        if ( xs->cells.size() != 2) return Ops::makeError("eq operator expecting two arguments.");
 
         ValuePtr x = xs->cells[0];
         ValuePtr y = xs->cells[1];
@@ -356,10 +354,10 @@ namespace Inky::Lisp {
         return  equals(x,y) ? Ops::makeInteger(1) : Ops::makeInteger(0);
     }
 
-    Either<Error,ValuePtr> builtin_neq (EnvironmentPtr e, ValuePtr a) {
-        if ( !Ops::isExpression(a) ) return Error {"neq expecting an expression."};
+    ValuePtr builtin_neq (EnvironmentPtr e, ValuePtr a) {
+        if ( !Ops::isExpression(a) ) return Ops::makeError("neq expecting an expression.");
         ExpressionPtr xs = std::get<ExpressionPtr>(a->var);
-        if ( xs->cells.size() != 2) return Error {"neq operator expecting two arguments."};
+        if ( xs->cells.size() != 2) return Ops::makeError("neq operator expecting two arguments.");
 
         ValuePtr x = xs->cells[0];
         ValuePtr y = xs->cells[1];
@@ -368,18 +366,16 @@ namespace Inky::Lisp {
     }
 
     /* If. */
-    Either<Error,ValuePtr> builtin_if(EnvironmentPtr e, ValuePtr v) {
-        if ( !Ops::isExpression(v) ) return Error {"if statement not of form 'if (exp) [exp1] [exp2]'"};
+    ValuePtr builtin_if(EnvironmentPtr e, ValuePtr v) {
+        if ( !Ops::isExpression(v) ) return Ops::makeError("if statement not of form 'if (exp) [exp1] [exp2]'");
         ExpressionPtr xs = std::get<ExpressionPtr>(v->var);
-        if ( xs->cells.size() != 3) return Error {" if statement missing argument."};
+        if ( xs->cells.size() != 3) return Ops::makeError(" if statement missing argument.");
 
-        ValuePtr cond = xs->cells[0];
-        ValuePtr exp1 = xs->cells[1];
+        ValuePtr cond = xs->cells[0]; /* Eval'd by the eval function. */
+        ValuePtr exp1 = xs->cells[1]; /* Conditions will have been skipped over.... */
         ValuePtr exp2 = xs->cells[2];
 
-        if (cond->kind != Type::Integer) return Error {"if condition must return true or false."};
-        //if (exp1->kind != Type::QExpression) return Error {"true condition of if, not list expression type."};
-       // if (exp2->kind != Type::QExpression) return Error {"false condition of it, not list expression type."};
+        if (cond->kind != Type::Integer) return Ops::makeError("if condition must return true or false.");
 
         /* Now set them to SExpression for eval. */
         exp1->kind = Type::SExpression;
@@ -391,13 +387,13 @@ namespace Inky::Lisp {
     }
 
     /* Error function. */
-    Either<Error,ValuePtr> builtin_error(EnvironmentPtr , ValuePtr v) {
-        if (!Ops::isExpression(v)) return Error {"error function must be passed a string literal expression."};
+    ValuePtr builtin_error(EnvironmentPtr , ValuePtr v) {
+        if (!Ops::isExpression(v)) return Ops::makeError("error function must be passed a string literal expression.");
         ExpressionPtr xs = std::get<ExpressionPtr>(v->var);
-        if ( xs->cells.size() != 1) return Error {"error function expects a single argument."};
-        if ( xs->cells[0]->kind != Type::String ) return Error {"error function argument does not evaluate to string."};
+        if ( xs->cells.size() != 1) return Ops::makeError("error function expects a single argument.");
+        if ( xs->cells[0]->kind != Type::String ) return Ops::makeError("error function argument does not evaluate to string.");
 
-        return Error { std::get<std::string>(xs->cells[0]->var) };
+        return Ops::makeError( std::get<std::string>(xs->cells[0]->var) );
     }
 
     void addBuiltinFunctions(EnvironmentPtr env) {

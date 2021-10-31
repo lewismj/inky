@@ -16,7 +16,7 @@ namespace Inky::Lisp {
         ~Eval() = default;
 
 
-        Either<Error,ValuePtr> eval(ValuePtr v) {
+        ValuePtr eval(ValuePtr v) {
             switch (v->kind) {
 
                 case Type::SExpression:
@@ -25,14 +25,11 @@ namespace Inky::Lisp {
                 case Type::Symbol: {
                     auto key = std::get<std::string>(v->var);
                     auto lookup = env->lookup(key);
-                    if (lookup) {
-                        return lookup;
-                    }
-                    else {
-                        return Error {fmt::format("unbound symbol: {}",key)};
-                    }
+                    if (lookup) return lookup;
+                    else return Ops::makeError(fmt::format("unbound symbol: {}",key));
                 }
 
+                case Type::Error:
                 case Type::Integer:
                 case Type::Double:
                 case Type::String:
@@ -43,7 +40,7 @@ namespace Inky::Lisp {
             }
         }
 
-        Either<Error,ValuePtr> evalSExpression(ValuePtr vp) {
+        ValuePtr evalSExpression(ValuePtr vp) {
             ExpressionPtr v = std::get<ExpressionPtr>(vp->var);
 
             if ( v->cells.empty() ) return vp;
@@ -73,7 +70,7 @@ namespace Inky::Lisp {
             while ( k < v->cells.size() )  {
               if ( Ops::hasSymbolName(v->cells[k],"defun"))   {
                 if ( k + 2 >= v->cells.size() ) {
-                    return Error { "defun must contain formals and body arguments."};
+                    return Ops::makeError("defun must contain formals and body arguments.");
                 }
 
                 /* defun (foo x y) (+ x y) => define (foo) (lambda (x y) (+ x y) */
@@ -95,15 +92,15 @@ namespace Inky::Lisp {
                  */
 
                 if ( !Ops::isExpression(formals) ) {
-                    return Error { "formals to defun should be expression."};
+                    return Ops::makeError("formals to defun should be expression.");
                 }
                 ExpressionPtr xs = std::get<ExpressionPtr>(formals->var);
                 if (xs->cells.size() < 2) {
-                    return Error { "function must have name and at least one argument."};
+                    return Ops::makeError("function must have name and at least one argument.");
                 }
                 ValuePtr functionName= xs->cells[0];
                 if ( functionName->kind != Type::Symbol ) {
-                   return Error { "function name must be a symbol."} ;
+                   return Ops::makeError("function name must be a symbol.");
                 }
                 std::string name = std::get<std::string>(functionName->var);
                 xs->cells.pop_front(); /* remove the function name from the formals. */
@@ -119,7 +116,7 @@ namespace Inky::Lisp {
               }
               else {
                   auto maybe = eval(v->cells[k]);
-                  if (maybe) {
+                  if ( ! Ops::isError(maybe)) {
                       /*
                        * The base implementation has a syntax [] for 'quoted expressions',
                        * eval([x]) = [x],
@@ -135,9 +132,9 @@ namespace Inky::Lisp {
                        */
                       if (Ops::hasSymbolName(v->cells[k], "lambda") || Ops::hasSymbolName(v->cells[k], "\\")) {
                           if (k + 2 >= v->cells.size()) {
-                              return Error {"lambda definition must contain formals and body."};
+                              return Ops::makeError("lambda definition must contain formals and body.");
                           }
-                          v->cells[k] = maybe.right();
+                          v->cells[k] = maybe;
 
                           /*  Simply skip over the eval of the lambda formals and body defn;
                            * This allows:
@@ -151,9 +148,9 @@ namespace Inky::Lisp {
                                 || Ops::hasSymbolName(v->cells[k],"="))
                         {
                           if (k + 2 >= v->cells.size()) {
-                              return Error{"define must have two arguments."};
+                              return Ops::makeError("define must have two arguments.");
                           }
-                          v->cells[k] = maybe.right();
+                          v->cells[k] = maybe;
                           if ( v->cells[k+1]->kind == Type::SExpression) v->cells[k+1]->kind = Type::QExpression;
                           else {
                               ExpressionPtr ys(new Expression());
@@ -165,22 +162,22 @@ namespace Inky::Lisp {
                       } else if (Ops::hasSymbolName(v->cells[k], "if")) {
                           /* if (condition) (then) (else) */
                           if (k + 3 >= v->cells.size()) {
-                              return Error{"if statement must be of form if (condition) (then) (else)."};
+                              return Ops::makeError("if statement must be of form if (condition) (then) (else).");
                           }
-                          v->cells[k] = maybe.right();
+                          v->cells[k] = maybe;
                           auto cond = eval(v->cells[k + 1]);
-                          if (cond) {
-                              v->cells[k + 1] = cond.right();
+                          if (!Ops::isError(cond)) {
+                              v->cells[k + 1] = cond;
                           } else {
-                              return cond.left();
+                              return cond; /* Just return the error immediately if the condition failed to eval. */
                           }
                           k += 4;
                       } else {
-                          v->cells[k] = maybe.right();
+                          v->cells[k] = maybe;
                           ++k;
                       }
                   } else {
-                      return maybe.left();
+                      return maybe; /* Return the error, don't try to eval further? */
                   }
               }
             }
@@ -201,16 +198,16 @@ namespace Inky::Lisp {
             else {
                 /* Make a list of the results, if one result return head. */
                 ExpressionPtr xs(new Expression());
-                for (size_t k=0; k<v->cells.size(); k++) {
-                    if ( !Ops::isEmptyExpression(v->cells[k]))
-                        xs->insert(v->cells[k]);
+                for (size_t i=0; i<v->cells.size(); i++) {
+                    if ( !Ops::isEmptyExpression(v->cells[i]))
+                        xs->insert(v->cells[i]);
                 }
                 if (xs->cells.size()==1) return xs->cells[0];
                 else return Ops::makeQExpression(xs);
             }
         }
 
-        Either<Error,ValuePtr> evalLambdaFunction(ValuePtr f, ValuePtr ar) {
+        ValuePtr evalLambdaFunction(ValuePtr f, ValuePtr ar) {
             /* f contains:
              * the struct 'lambda':
              *  formals (Argument specification).
@@ -244,22 +241,22 @@ namespace Inky::Lisp {
             while ( ! a->cells.empty() ) {
                 if (formals->cells.empty()) {
                     std::string str = fmt::format("function passed too many arguments {} , expected {}", arg_count, formals_count);
-                    return Error { str };
+                    return Ops::makeError(str);
                 }
 
                 ValuePtr symbol = formals->cells[0];
                 formals->cells.pop_front();
-                if ( symbol->kind != Type::Symbol ) return Error {"function eval failed formal not a symbol."};
+                if ( symbol->kind != Type::Symbol ) return Ops::makeError("function eval failed formal not a symbol.");
                 std::string symbol_name = std::get<std::string>(symbol->var);
 
                 if (symbol_name == "&") { /* variable arguments. */
                     if (formals->cells.size() != 1) {
-                        return Error {"function signature invalid, varargs '&' must have one following symbol."};
+                        return Ops::makeError("function signature invalid, varargs '&' must have one following symbol.");
                     }
                     /* We have something of the form "x & xs"; bind the 'xs' symbol to list of supplied args. */
                     ValuePtr tmp = formals->cells[0];
                     formals->cells.pop_front();
-                    if ( tmp->kind != Type::Symbol ) return Error { "function formal not a symbol."};
+                    if ( tmp->kind != Type::Symbol ) return Ops::makeError("function formal not a symbol.");
                     ar->kind = Type::QExpression; /* make list expression. */
                     std::string xs_name = std::get<std::string>(tmp->var);
                     fn->env->insert(xs_name,ar);
@@ -273,13 +270,12 @@ namespace Inky::Lisp {
             if (!formals->cells.empty() && Ops::hasSymbolName(formals->cells[0],"&")) {
                 /* Case deals with variable arguments where nothing supplied for the variable
                  * args, in this case, we can just assign the formal an empty expression. */
-                if ( formals->cells.size() != 2 ) {
-                    return Error {"function signature should be of form: x & xs when passing variable args."};
-                }
+                if ( formals->cells.size() != 2 )
+                    return Ops::makeError("function signature should be of form: x & xs when passing variable args.");
                 formals->cells.pop_front();
                 ValuePtr xs = formals->cells[0]; formals->cells.pop_front();
                 ValuePtr exp = Ops::makeQExpression();
-                if (xs->kind != Type::Symbol) return Error {"formal must be symbol."};
+                if (xs->kind != Type::Symbol) return Ops::makeError("formal must be symbol.");
                 fn->env->insert(std::get<std::string>(xs->var) ,exp);
             }
 
@@ -301,7 +297,7 @@ namespace Inky::Lisp {
             return f->clone(); // Return lambda, no args called yet, just return an empty instance for use.
         }
 
-        Either<Error, ValuePtr> evalBuiltinFunction(ValuePtr f, ValuePtr a) {
+        ValuePtr evalBuiltinFunction(ValuePtr f, ValuePtr a) {
             auto fn = std::get<BuiltinFunction>(f->var);
             return fn(env, a);
         }
@@ -311,7 +307,7 @@ namespace Inky::Lisp {
     };
 
 
-    Either<Error,ValuePtr> eval(EnvironmentPtr env, ValuePtr val) {
+    ValuePtr eval(EnvironmentPtr env, ValuePtr val) {
         Eval ev(env);
         return ev.eval(val);
     }

@@ -11,15 +11,6 @@ namespace Inky::Lisp {
         cells.push_back(value);
     }
 
-    /*
-    void Expression::move(ValuePtr value) {
-        if (value->kind == Type::SExpression || value->kind == Type::QExpression) {
-            ExpressionPtr v = std::get<ExpressionPtr>(value->var);
-            std::move(v->cells.begin(),v->cells.end(),std::back_inserter(cells));
-        }
-    }
-     */
-
     ValuePtr Value::clone() {
         switch (kind) {
             case Type::Function: {
@@ -44,6 +35,7 @@ namespace Inky::Lisp {
                 return v;
             }
 
+            case Type::Error:
             case Type::Integer:
             case Type::Double:
             case Type::String:
@@ -79,6 +71,9 @@ namespace Inky::Lisp {
             case Type::SExpression:
                 os << "(" << std::get<ExpressionPtr>(value->var) << ")";
                 break;
+            case Type::Error:
+                os << std::get<LispErrorPtr>(value->var) << "\n";
+                break;
         }
         return os;
     }
@@ -109,6 +104,9 @@ namespace Inky::Lisp {
             case Type::SExpression:
                 os << "<sexpression>";
                 break;
+            case Type::Error:
+                os << "<error>";
+                break;
         }
         return os;
     }
@@ -129,8 +127,13 @@ namespace Inky::Lisp {
     }
 
     /* Useful for debug, but use fmt in REPL. */
-    std::ostream& operator<<(std::ostream& os, Error e) {
+    std::ostream& operator<<(std::ostream& os, ParseError e) {
         os << e.message << "\n";
+        return os;
+    }
+
+    std::ostream& operator<<(std::ostream& os, LispErrorPtr e) {
+        os << e->message << "\n";
         return os;
     }
 
@@ -161,7 +164,6 @@ namespace Inky::Lisp {
         }
 
         ValuePtr makeSExpression(ExpressionPtr expression) {
-            //ExpressionPtr expression = std::make_shared<Expression>(Expression());
             return std::make_shared<Value>(Value { Type::SExpression, expression});
         }
 
@@ -171,7 +173,6 @@ namespace Inky::Lisp {
         }
 
         ValuePtr makeQExpression(ExpressionPtr expression) {
-            //ExpressionPtr expression = std::make_shared<Expression>(Expression());
             return std::make_shared<Value>(Value { Type::QExpression, expression});
         }
 
@@ -179,6 +180,14 @@ namespace Inky::Lisp {
             ExpressionPtr expression = std::make_shared<Expression>(Expression());
             return std::make_shared<Value>(Value { Type::QExpression, expression});
         }
+
+        ValuePtr makeError(const std::string& error)  {
+            LispErrorPtr lispError = std::make_shared<LispError>(LispError());
+            lispError->message = error;
+            return std::make_shared<Value>(Value { Type::Error, lispError });
+        }
+
+        bool isError(ValuePtr a) { return a->kind == Type::Error; }
 
         bool isNumeric(ValuePtr a) { return a->kind == Type::Integer || a->kind == Type::Double; }
 
@@ -191,7 +200,6 @@ namespace Inky::Lisp {
             }
             return false;
         }
-
 
         bool hasSymbolName(ValuePtr a, std::string_view s) {
             if ( a->kind != Type::Symbol ) return false;

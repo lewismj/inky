@@ -5,6 +5,6 @@
 
 namespace Inky::Lisp {
 
-    Either<Error,ValuePtr> eval(EnvironmentPtr env, ValuePtr val);
+    ValuePtr eval(EnvironmentPtr env, ValuePtr val);
 
 }

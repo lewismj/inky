@@ -22,14 +22,15 @@ namespace Inky::Lisp {
         void parseAndEvalInput(std::string_view input) {
             auto v = parse(input);
             if ( v) {
-                Either<Error,ValuePtr> result = eval(env,v.right());
-                auto clr = result ? fg(fmt::terminal_color::green) | (fmt::emphasis::bold)
-                                  : fg(fmt::terminal_color::red) | (fmt::emphasis::bold);
+                ValuePtr result = eval(env, v.right());
+                bool isOk= !Ops::isError(result);
+                auto clr = isOk? fg(fmt::terminal_color::green) | (fmt::emphasis::bold)
+                        : fg(fmt::terminal_color::red) | (fmt::emphasis::bold);
 
-                if (result) fmt::print(clr,"{}\n",result.right());
-                else fmt::print(clr,"{}\n",result.left().message);
+                fmt::print(clr,"{}\n",result);
+
             } else {
-                Error e = v.left();
+                ParseError e = v.left();
                 fmt::print( fg(fmt::terminal_color::green) | (fmt::emphasis::italic), "{}\n",e.message);
                 fmt::print( fg(fmt::terminal_color::green) | (fmt::emphasis::italic), "{}\n",input);
 

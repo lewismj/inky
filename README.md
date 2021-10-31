@@ -141,19 +141,9 @@ The core design choices made were:
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I quickly gave up on the idea of using Boost’s Spirit parser.*
 
-3.  The interface to the parser is simple ` Either<Error,ValuePtr> parse(std::string_view in)`. The parser will return a smart pointer to a `Value` that represents the S-Expression or an Error.
+3. The `eval` function has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
 
-	One issue is that this carried over to the evaluation function `Either<Error,ValuePtr> eval(...)` this does mean *runtime errors* are essentially treated as exceptions. 
-
-	* The error type  in the parser should be `ParseError`.
-	* The error type in the `eval` function could be `Uncaught 	Exception` or `FatalException`.
-	* A runtime error, could be some `ErrorValue` and should be part of the discriminated union. Lisp functions themselves should be able to pattern match say on `Error` representing some error in computation.
-
-4. The `eval` function has 'spliced in' some of the work that should be done by a macro expander. That should be abstracted out to support proper `defmacro` syntax.
-
-5. This is largely ‘throwaway’ code, however very useful as a prototyping exercise and evaluating what would be necessary for a better, full implementation.
-
-6. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
+4. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
 
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp

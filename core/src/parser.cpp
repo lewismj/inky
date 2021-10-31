@@ -21,7 +21,7 @@ namespace Inky::Lisp {
        explicit Parser(std::string_view in) : input(in), i(in.begin()) {}
        ~Parser() = default;
 
-       Either<Error,ValuePtr> parse() { return readExpressionType(Type::SExpression,'\0'); }
+       Either<ParseError,ValuePtr> parse() { return readExpressionType(Type::SExpression, '\0'); }
 
     private:
 
@@ -50,15 +50,15 @@ namespace Inky::Lisp {
             }
         }
 
-        Either<Error,ValuePtr> readValue() {
+        Either<ParseError,ValuePtr> readValue() {
             skipWhitespace();
 
             if (i == input.end()) {
                 size_t position = std::distance(input.begin(),i-1);
-                return Error {"expecting token but reach end of input.", Error::Location { position, 1}};
+                return ParseError {"expecting token but reach end of input.", ParseError::Location {position, 1}};
             }
 
-            Either<Error,ValuePtr> rtn(nullptr);
+            Either<ParseError,ValuePtr> rtn(nullptr);
 
             if (*i == '(') {
                 advance();
@@ -80,7 +80,7 @@ namespace Inky::Lisp {
             }
             else {
                 size_t position =  std::distance(input.begin(),i);
-                return Error { "mismatched expression.", Error::Location { position , 1}};
+                return ParseError {"mismatched expression.", ParseError::Location {position , 1}};
             }
 
             skipWhitespace();
@@ -88,7 +88,7 @@ namespace Inky::Lisp {
             return rtn;
         }
 
-        Either<Error,ValuePtr> readExpressionType(Type kind, char end_ch) {
+        Either<ParseError,ValuePtr> readExpressionType(Type kind, char end_ch) {
             ExpressionPtr expression = std::make_shared<Expression>(Expression());
             while ( *i != end_ch) {
                 auto j = readValue();
@@ -99,7 +99,7 @@ namespace Inky::Lisp {
                 Ops::makeSExpression(expression) : Ops::makeQExpression(expression);
         }
 
-        Either<Error,ValuePtr> readSymbol() {
+        Either<ParseError,ValuePtr> readSymbol() {
             std::ostringstream os;
             while (strchr( "abcdefghijklmnopqrstuvwxyz"
                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -111,15 +111,15 @@ namespace Inky::Lisp {
         }
 
         /* Read string literal. */
-        Either <Error,ValuePtr> readStringLiteral() {
+        Either <ParseError,ValuePtr> readStringLiteral() {
             std::string_view::const_iterator s = i;
             std::ostringstream os;
             while ( i!= input.end() && *i != '\"') {
                 if ( *i == '\0' ) {
                     size_t start = std::distance(input.begin(), s);
                     size_t distance = std::distance(input.begin(), i) - start;
-                    Error::Location l { start, distance };
-                    return Error { "string literal not terminated", l };
+                    ParseError::Location l {start, distance };
+                    return ParseError {"string literal not terminated", l };
                 }
                 os << *i;
                 advance();
@@ -129,7 +129,7 @@ namespace Inky::Lisp {
         }
 
         /* Read an integer or double. */
-        Either<Error,ValuePtr> readNumericValue() {
+        Either<ParseError,ValuePtr> readNumericValue() {
             /* Simplistic, we should hold 'val' as an unsigned long until (or if) we reach '.' or exponent etc.. */
             double sign = 1;
             if ((*i == '+' || *i == '-')) {
@@ -161,7 +161,7 @@ namespace Inky::Lisp {
     };
 
 
-    Either<Error,ValuePtr> parse(std::string_view input) {
+    Either<ParseError,ValuePtr> parse(std::string_view input) {
         Parser p(input);
         return p.parse();
     }
