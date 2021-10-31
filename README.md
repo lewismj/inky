@@ -166,6 +166,36 @@ In prototyping there are a few design decisions that I would re-visit; to establ
 
 4. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
 
+### How does evaluation work?
+
+Suppose we have an expression of the type:
+```lisp
+(lambda(x) (+ x (+ 2 3)) ) (+ 1 2)
+```
+
+We would expect the result **8**
+`(+ 1 2)` evaluates to 3
+`(+ 2 3)` evaluates to 5
+
+Finally, in the function call 3 is supplied for ‘x’, so we are left with `(+ 3 5)`
+
+The algorithm for evaluating expressions is simple,
+
+1. If we have a primitive type it evaluates as itself, i.e. 4 evaluates to 4.
+
+2. Given an S-Expression:
+	1. Loop over all the sub-expressions and reduced them if we can.
+
+		So in the above S-Expression:
+		1. We don’t evaluate the argument *x* until the function is invoked(*)*
+		2. We can evaluate `(+ 2 3)` and `(+ 1 2)` 
+
+	2. Once sub-expressions have been reduced (evaluated) then evaluate function calls; or return the list of results if no functions calls are made.
+
+	Key to evaluating is know to reduce. The implementation `eval.cpp` shows that we skip ahead in the loop if we encounter things like a function definition. 
+
+	Basically we don’t try reducing (evaluating) `(x)` in the Loop 2.1; since it won’t exist until bound by function call.
+
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp
 [3]:	https://norvig.com/lispy.html
