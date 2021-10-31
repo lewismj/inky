@@ -153,9 +153,9 @@ In prototyping there are a few design decisions that I would re-visit; to establ
 
 	In a language like Haskell we would use a *sum* type. The choice in C++ is either a union type (as above) or an inheritance hierarchy.
 
-	I would probably not use `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow.  It introduces some boilerplate that complicates some implementation details. 
+	I would reconsider the use of `std::variant` again. It isn’t a good alternative to sum types. Intuitively it seems slow.  It introduces boilerplate that complicates implementation details. 
 
-	I’m not convinced the alternative (to variant/union): an object oriented hierarchy would ultimately produce a cleaner design.
+	Yet, I’m not convinced the alternative (to variant/union): an object oriented hierarchy would ultimately produce a cleaner design.
 
 2. The parsing routines are basic. I could have used a combinator library. I have used [FastParse][4] in Scala. I decided to investigate Boost’s Spirit parser.  *I  gave up on using Boost’s Spirit parser.*
 	Probably worth investigating combinator alternatives to Spirit. I would **not** use Boost Spirit.
