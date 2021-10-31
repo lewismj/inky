@@ -15,13 +15,11 @@ The simplest example of Lisp interpreter that I could find is from Peter Novig�
 Each of these is an Interpreter that produces results by traversal of an abstract syntax tree. The obvious following step would be to implement the evaluator using a stack machine.
 
 Note:
-* The first version **v1.0** implements a syntax `[ expression ]` for representing quoted expressions. This allows the core `eval` function to be as simple as possible.
-	The downside is a user has to remember special syntax (for representing function arguments etc.).
-	At the cost of complicating the `eval` (and should be a macro table) I implemented (**v1.2**) handlers for ‘special forms’. The `eval` function has to know not to eagerly evaluate function arguments and the like. The result is a more conventional Lisp syntax. I retain `[ list ]` syntax for lists as I think this is more natural looking.
+* The solution started *v1.0* implementing a special syntax `[expr]` to represent quoted expressions. These are expressions that aren’t eagerly evaluated. In *v1.2* onward that is dropped and more conventional Lisp syntax adopted (at the expense of some complications in the `eval` function). A proper Lisp *should* have a macro expansion table. This hasn’t been implemented.
 
-* Basic functionality is working. Though just proof of concept code, it does support partial function application, higher order functions,  etc.
+* Basic functionality is working. Just proof of concept code, it does support partial function application, higher order functions,  etc.
 
-* The core functionality being defined within the Lisp prelude itself (i.e. we do not implement everything via builtin functions, but effectively *very loosely* we implement an extended untyped λ-calculus engine and the Lisp prelude builds on that.
+* The core functionality is defined within the Lisp prelude itself (i.e. we do not implement everything via builtin functions). Effectively this implements an extended untyped λ-calculus engine (*sort of*) and the Lisp prelude builds on that.
 
 ### Usage
 
@@ -205,10 +203,11 @@ I highly recommend this book. A great insight into Lisp/Scheme and how you would
 and compilers. I've not (yet) found a more modern reference on compilers that matches *The Dragon Book*.
 
 
-![](https://github.com/lewismj/inky/blob/main/doc/sicp.jpg)
+![][image-1]
 
 [1]:	https://github.com/orangeduck/BuildYourOwnLisp
 [2]:	https://github.com/adam-mcdaniel/wisp
 [3]:	https://norvig.com/lispy.html
 [4]:	https://github.com/com-lihaoyi/fastparse
-[5]:	https://github.com/lewismj/inky/blob/main/doc/sicp.jpg?raw=true "sicp.jpg"
+
+[image-1]:	https://github.com/lewismj/inky/blob/main/doc/sicp.jpg
