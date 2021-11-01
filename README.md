@@ -164,7 +164,7 @@ In prototyping there are a few design decisions that I would re-visit; to establ
 
 4. In this codebase I’ve made no attempt at any tail call optimisation in the `eval`. I think in a better implementation either you would address that (trampolining) or introduce a stack machine rather than AST walking interpreter.
 
-5. This is *prototype code*, largely writing some bit and pieces of code to get an idea for how a solution *may* hang together. Rather than coding to a production standard. So, I'd expect both missing functionality and some bugs.
+5. This is *prototype code*. I have written code to get an idea for how a solution *may* hang together. Rather than coding to a production standard. So, I'd expect both missing functionality and some bugs.
 
 
 ### How does evaluation work?
